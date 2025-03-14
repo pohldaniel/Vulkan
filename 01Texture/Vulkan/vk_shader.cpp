@@ -1,6 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <shaderc/shaderc.h>
+#include <sstream>
 #include "vk_shader.h"
 
 void VkShader::preprocess_shader(CompilationInfo& info) {	
@@ -18,14 +18,14 @@ void VkShader::preprocess_shader(CompilationInfo& info) {
 	memcpy(info.source.data(), src, newSize);
 
 	//Log output for fun
-	std::cout << "---- Preprocessed GLSL source code ----" << std::endl;
-	std::string output = { info.source.data(), info.source.data() + info.source.size() };
-	std::cout << output << std::endl;
+	//std::cout << "---- Preprocessed GLSL source code ----" << std::endl;
+	//std::string output = { info.source.data(), info.source.data() + info.source.size() };
+	//std::cout << output << std::endl;
 }
 
 void VkShader::compile_file_to_assembly(CompilationInfo& info) {
 	shaderc_compiler_t compiler = shaderc_compiler_initialize();
-	shaderc_compilation_result_t result = shaderc_compile_into_spv_assembly(compiler, info.source.data(), info.source.size(), info.kind,info.fileName, "main", info.options);
+	shaderc_compilation_result_t result = shaderc_compile_into_spv_assembly(compiler, info.source.data(), info.source.size(), info.kind, info.fileName, "main", info.options);
 
 	if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
 		std::cout << "Error: toSpvAssembly" << std::endl;
@@ -38,9 +38,9 @@ void VkShader::compile_file_to_assembly(CompilationInfo& info) {
 	memcpy(info.source.data(), src, newSize);
 
 	//Log output for fun
-	std::cout << "---- SPIR-V Assembly code ----" << std::endl;
-	std::string output = { info.source.data(), info.source.data() + info.source.size() };
-	std::cout << output << std::endl;
+	//std::cout << "---- SPIR-V Assembly code ----" << std::endl;
+	//std::string output = { info.source.data(), info.source.data() + info.source.size() };
+	//std::cout << output << std::endl;
 }
 
 std::vector<uint32_t> VkShader::compile_file(CompilationInfo& info) {
@@ -52,16 +52,16 @@ std::vector<uint32_t> VkShader::compile_file(CompilationInfo& info) {
 
 	//copy result to the final output
 	const uint32_t* src = reinterpret_cast<const uint32_t*>(shaderc_result_get_bytes(result));
-	size_t wordCount = reinterpret_cast<const uint32_t*>(shaderc_result_get_bytes(result)) + shaderc_result_get_length(result) /sizeof(uint32_t) - src;
+	size_t wordCount = shaderc_result_get_length(result) /sizeof(uint32_t);
 	std::vector<uint32_t> output(wordCount);
-	memcpy(output.data(), src, wordCount * sizeof(uint32_t));
+	memcpy(output.data(), src, shaderc_result_get_length(result));
 
 	//Log output for fun
-	std::cout << "---- SPIR-V Binary Code ----" << std::endl;
-	std::cout << "Magic Number: " << std::endl;
-	std::stringstream converter;
-	converter << output[0];
-	std::cout << converter.str() << std::endl;
+	//std::cout << "---- SPIR-V Binary Code ----" << std::endl;
+	//std::cout << "Magic Number: " << std::endl;
+	//std::stringstream converter;
+	//converter << output[0];
+	//std::cout << converter.str() << std::endl;
 
 	return output;
 }
@@ -70,13 +70,17 @@ std::vector<VkShaderEXT> VkShader::make_shader_objects(VkInstance instance, VkDe
 		CompilationInfo info;
 		info.options = shaderc_compile_options_initialize();
 
-		//info.options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
 		shaderc_compile_options_set_target_env(info.options, shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
-		shaderc_compile_options_set_target_env(info.options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
+		shaderc_compile_options_set_target_env(info.options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
 		shaderc_compile_options_set_source_language(info.options, shaderc_source_language_glsl);
-		shaderc_compile_options_set_target_spirv(info.options, shaderc_spirv_version_1_6);
-		shaderc_compile_options_set_optimization_level(info.options, shaderc_optimization_level_performance);
-
+		shaderc_compile_options_set_target_spirv(info.options, shaderc_spirv_version_1_3);
+		shaderc_compile_options_set_optimization_level(info.options, shaderc_optimization_level_zero);
+		//shaderc_compile_options_set_suppress_warnings(info.options);
+		//shaderc_compile_options_set_warnings_as_errors(info.options);
+		//shaderc_compile_options_set_auto_bind_uniforms(info.options, false);
+		//shaderc_compile_options_set_preserve_bindings(info.options, false);
+		//shaderc_compile_options_set_vulkan_rules_relaxed(info.options, false);
+		//shaderc_compile_options_set_auto_combined_image_sampler(info.options, false);
 		std::stringstream filenameBuilder;
 		std::string filename;
 
@@ -101,8 +105,11 @@ std::vector<VkShaderEXT> VkShader::make_shader_objects(VkInstance instance, VkDe
 		info.source = read_file(info.fileName);
 		preprocess_shader(info);
 		compile_file_to_assembly(info);
-		fragmentCode = compile_file(info);
 
+		
+
+		fragmentCode = compile_file(info);
+		//write_file("res/shader/shader3.frag.spv", fragmentCode);
 
 		VkShaderCodeTypeEXT codeType = VkShaderCodeTypeEXT::VK_SHADER_CODE_TYPE_SPIRV_EXT;
 		const char* pName = "main";
@@ -125,7 +132,7 @@ std::vector<VkShaderEXT> VkShader::make_shader_objects(VkInstance instance, VkDe
 		fragmentInfo.codeSize = sizeof(uint32_t) * fragmentCode.size();
 		fragmentInfo.pCode = fragmentCode.data();
 		fragmentInfo.pName = pName;
-
+		
 		
 		std::vector<VkShaderCreateInfoEXT> shaderInfo;
 		shaderInfo.push_back(vertexInfo);
@@ -175,4 +182,10 @@ std::vector<char> VkShader::read_file(const char* filename) {
 
 	file.close();
 	return buffer;
+}
+
+void VkShader::write_file(const char* filename, std::vector<uint32_t>& data) {
+	std::ofstream fs(filename, std::ios::out | std::ios::binary | std::ios::app);
+	fs.write(reinterpret_cast<char*>(&data), data.size() * sizeof(uint32_t));
+	fs.close();
 }

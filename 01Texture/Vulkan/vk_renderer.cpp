@@ -54,11 +54,13 @@ bool vk_init(VkContext *vkcontext, void *window)
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = "Pong";
 	appInfo.pEngineName = "Ponggine";
+	appInfo.apiVersion = VK_API_VERSION_1_4;
 
 	const char *extensions[] = {
 		VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 		VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-		VK_KHR_SURFACE_EXTENSION_NAME
+		VK_KHR_SURFACE_EXTENSION_NAME,
+		//VK_KHR_SHADER_TERMINATE_INVOCATION_EXTENSION_NAME,
 		//VK_EXT_SHADER_OBJECT_EXTENSION_NAME,
 		//VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME 
 	};
@@ -305,18 +307,20 @@ bool vk_init(VkContext *vkcontext, void *window)
 
 	// Create Descriptor Set Layouts
 	{
-		VkDescriptorSetLayoutBinding binding = {};
-		binding.binding = 0;
-		binding.descriptorCount = 1;
-		binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
+		samplerLayoutBinding.binding = 0;
+		samplerLayoutBinding.descriptorCount = 1;
+		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		layoutInfo.bindingCount = 1;
-		layoutInfo.pBindings = &binding;
+		layoutInfo.pBindings = &samplerLayoutBinding;
 
 		VK_CHECK(vkCreateDescriptorSetLayout(vkcontext->device, &layoutInfo, 0, &vkcontext->setLayout));
+
+	
 	}
 
 	// Create Pipeline Layout
@@ -374,47 +378,27 @@ bool vk_init(VkContext *vkcontext, void *window)
 
 		VkShader shader;
 
-		std::vector<uint32_t> _vertexCode;
-		std::vector<uint32_t> _fragmentCode;
+		std::vector<uint32_t> vertexCode, fragmentCode;
+		shader.make_shader_objects(vkcontext->instance, vkcontext->device, "shader", vertexCode, fragmentCode);
 
-		shader.make_shader_objects(vkcontext->instance, vkcontext->device, "shader", _vertexCode, _fragmentCode);
-
-		
 
 		// Vertex Shader
-		{
-			uint32_t lengthInBytes;
-			uint32_t *vertexCode = (uint32_t *)platform_read_file("res/shader/shader.vert.spv", &lengthInBytes);
-
-			/*for (int i = 0; i < 100; i++) {
-				std::cout << _vertexCode[i] << std::endl;
-				std::cout << vertexCode[i] << std::endl;
-				std::cout << "--------" << std::endl;
-			}
-			std::cout << "Length: " << lengthInBytes << "  " << _vertexCode.size() * sizeof(uint32_t) << std::endl;*/
+		{			
 			VkShaderModuleCreateInfo shaderInfo = {};
 			shaderInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			shaderInfo.pCode = vertexCode;
-			//shaderInfo.pCode = _vertexCode.data();
-			shaderInfo.codeSize = lengthInBytes;
+			shaderInfo.pCode = vertexCode.data();
+			shaderInfo.codeSize = vertexCode.size() * sizeof(uint32_t);
 			VK_CHECK(vkCreateShaderModule(vkcontext->device, &shaderInfo, 0, &vertexShader));
-
-			delete vertexCode;
 		}
 
 		// Fragment Shader
 		{
-			uint32_t lengthInBytes;
-			uint32_t *fragmentCode = (uint32_t *)platform_read_file("res/shader/shader.frag.spv", &lengthInBytes);
-
+			
 			VkShaderModuleCreateInfo shaderInfo = {};
 			shaderInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-			shaderInfo.pCode = fragmentCode;
-			//shaderInfo.pCode = _fragmentCode.data();
-			shaderInfo.codeSize = lengthInBytes;
+			shaderInfo.pCode = fragmentCode.data();
+			shaderInfo.codeSize = fragmentCode.size() * sizeof(uint32_t);
 			VK_CHECK(vkCreateShaderModule(vkcontext->device, &shaderInfo, 0, &fragmentShader));
-
-			delete fragmentCode;
 		}
 
 		VkPipelineShaderStageCreateInfo vertStage = {};

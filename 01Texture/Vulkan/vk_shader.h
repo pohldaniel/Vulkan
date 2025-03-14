@@ -1,28 +1,20 @@
 #pragma once
 
-#define VULKAN_HPP_NO_EXCEPTIONS
-//
-#include <deque>
-#include <functional>
+#include <vector>
 #include <vulkan/vulkan.h>
-#include <vulkan/vulkan.hpp>
 #include <shaderc/shaderc.h>
-//#include <shaderc/shaderc.hpp>
 
 struct CompilationInfo {
 	const char* fileName;
-
 	shaderc_shader_kind kind;
 	std::vector<char> source;
 	shaderc_compile_options_t options;
-	//shaderc::CompileOptions options;
 };
-
 
 
 struct VkShader {
 	std::vector<char> read_file(const char* filename);
-
+	void write_file(const char* filename, std::vector<uint32_t>& data);
 	void preprocess_shader(CompilationInfo& info);
 	void compile_file_to_assembly(CompilationInfo& info);
 	std::vector<uint32_t> compile_file(CompilationInfo& info);
