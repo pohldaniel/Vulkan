@@ -45,6 +45,8 @@ struct VkContext{
 
 	int graphicsIdx;
 	bool enableWireFrame;
+
+	std::vector<VkShaderEXT> shaders;
 };
 
 extern "C" {

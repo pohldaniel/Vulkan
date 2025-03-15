@@ -18,5 +18,5 @@ struct VkShader {
 	void preprocess_shader(CompilationInfo& info);
 	void compile_file_to_assembly(CompilationInfo& info);
 	std::vector<uint32_t> compile_file(CompilationInfo& info);
-	std::vector<VkShaderEXT> make_shader_objects(VkInstance instance, VkDevice logicalDevice, const char* name, std::vector<uint32_t>& vertexCode, std::vector<uint32_t>& fragmentCode);
+	std::vector<VkShaderEXT> make_shader_objects(VkInstance instance, VkDevice logicalDevice, const char* name, std::vector<uint32_t>& vertexCode, std::vector<uint32_t>& fragmentCode, bool buildAndCompile = true);
 };

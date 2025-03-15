@@ -66,16 +66,18 @@ std::vector<uint32_t> VkShader::compile_file(CompilationInfo& info) {
 	return output;
 }
 
-std::vector<VkShaderEXT> VkShader::make_shader_objects(VkInstance instance, VkDevice logicalDevice, const char* name, std::vector<uint32_t>& vertexCode, std::vector<uint32_t>& fragmentCode) {
+std::vector<VkShaderEXT> VkShader::make_shader_objects(VkInstance instance, VkDevice logicalDevice, const char* name, std::vector<uint32_t>& vertexCode, std::vector<uint32_t>& fragmentCode, bool buildAndCompile) {
+		
+	if (buildAndCompile) {
 		CompilationInfo info;
 		info.options = shaderc_compile_options_initialize();
 
 		shaderc_compile_options_set_target_env(info.options, shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
 		shaderc_compile_options_set_target_env(info.options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
 		shaderc_compile_options_set_source_language(info.options, shaderc_source_language_glsl);
-		shaderc_compile_options_set_target_spirv(info.options, shaderc_spirv_version_1_3);
+		shaderc_compile_options_set_target_spirv(info.options, shaderc_spirv_version_1_6);
 		shaderc_compile_options_set_optimization_level(info.options, shaderc_optimization_level_zero);
-		//shaderc_compile_options_set_suppress_warnings(info.options);
+		shaderc_compile_options_set_suppress_warnings(info.options);
 		//shaderc_compile_options_set_warnings_as_errors(info.options);
 		//shaderc_compile_options_set_auto_bind_uniforms(info.options, false);
 		//shaderc_compile_options_set_preserve_bindings(info.options, false);
@@ -84,12 +86,11 @@ std::vector<VkShaderEXT> VkShader::make_shader_objects(VkInstance instance, VkDe
 		std::stringstream filenameBuilder;
 		std::string filename;
 
-		VkShaderCreateFlagsEXT flags = VkShaderCreateFlagBitsEXT::VK_SHADER_CREATE_LINK_STAGE_BIT_EXT;
-		VkShaderStageFlags nextStage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+		
 
 		filenameBuilder << "res/shader/" << name << ".vert";
 		filename = filenameBuilder.str();
-		filenameBuilder.str("");	
+		filenameBuilder.str("");
 		info.fileName = filename.c_str();
 		info.kind = shaderc_vertex_shader;
 		info.source = read_file(info.fileName);
@@ -105,62 +106,57 @@ std::vector<VkShaderEXT> VkShader::make_shader_objects(VkInstance instance, VkDe
 		info.source = read_file(info.fileName);
 		preprocess_shader(info);
 		compile_file_to_assembly(info);
-
-		
-
 		fragmentCode = compile_file(info);
-		//write_file("res/shader/shader3.frag.spv", fragmentCode);
+	}
 
-		VkShaderCodeTypeEXT codeType = VkShaderCodeTypeEXT::VK_SHADER_CODE_TYPE_SPIRV_EXT;
-		const char* pName = "main";
+	VkShaderCreateFlagsEXT flags = VkShaderCreateFlagBitsEXT::VK_SHADER_CREATE_LINK_STAGE_BIT_EXT;
+	VkShaderStageFlags nextStage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+	VkShaderCodeTypeEXT codeType = VkShaderCodeTypeEXT::VK_SHADER_CODE_TYPE_SPIRV_EXT;
+	const char* pName = "main";
 
-		VkShaderCreateInfoEXT vertexInfo = {};
-		vertexInfo.flags = flags;
-		vertexInfo.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
-		vertexInfo.nextStage = nextStage;
-		vertexInfo.codeType = codeType;
-		vertexInfo.codeSize = sizeof(uint32_t) * vertexCode.size();
-		vertexInfo.pCode = vertexCode.data();
-		vertexInfo.pName = pName;
+	VkShaderCreateInfoEXT vertexInfo = {};
+	vertexInfo.sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
+	vertexInfo.flags = flags;
+	vertexInfo.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+	vertexInfo.nextStage = nextStage;
+	vertexInfo.codeType = codeType;
+	vertexInfo.codeSize = sizeof(uint32_t) * vertexCode.size();
+	vertexInfo.pCode = vertexCode.data();
+	vertexInfo.pName = pName;
 
-		
+	VkShaderCreateInfoEXT fragmentInfo = {};
+	fragmentInfo.sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
+	fragmentInfo.flags = flags;
+	fragmentInfo.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+	fragmentInfo.codeType = codeType;
+	fragmentInfo.codeSize = sizeof(uint32_t) * fragmentCode.size();
+	fragmentInfo.pCode = fragmentCode.data();
+	fragmentInfo.pName = pName;
+	
+	std::vector<VkShaderCreateInfoEXT> shaderInfo;
+	shaderInfo.push_back(vertexInfo);
+	shaderInfo.push_back(fragmentInfo);
 
-		VkShaderCreateInfoEXT fragmentInfo = {};
-		fragmentInfo.flags = flags;
-		fragmentInfo.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
-		fragmentInfo.codeType = codeType;
-		fragmentInfo.codeSize = sizeof(uint32_t) * fragmentCode.size();
-		fragmentInfo.pCode = fragmentCode.data();
-		fragmentInfo.pName = pName;
-		
-		
-		std::vector<VkShaderCreateInfoEXT> shaderInfo;
-		shaderInfo.push_back(vertexInfo);
-		shaderInfo.push_back(fragmentInfo);
+	std::vector <VkShaderEXT> shaderEXTs;
+	shaderEXTs.resize(2);
 
-		std::vector <VkShaderEXT> shaderEXTs;
-		shaderEXTs.resize(2);
+	auto vkCreateShadersEXT = (PFN_vkCreateShadersEXT)vkGetInstanceProcAddr(instance, "vkCreateShadersEXT");
+	VkResult result = vkCreateShadersEXT(logicalDevice, 2, shaderInfo.data(), nullptr, shaderEXTs.data());
 
-		/*auto vkCreateShadersEXT = (PFN_vkCreateShadersEXT)vkGetInstanceProcAddr(instance, "vkCreateShadersEXT");
-
-		std::cout << "Pointer: " << vkCreateShadersEXT << std::endl;
-
-		VkResult result = vkCreateShadersEXT(logicalDevice, 2, shaderInfo.data(), nullptr, shaderEXTs.data());
-
-		if (result == VkResult::VK_SUCCESS) {
-			std::cout << "Successfully made shaders" << std::endl;
-			VkShaderEXT vertexShader = shaderEXTs[0];
-			//deviceDeletionQueue.push_back([vertexShader](VkDevice device) {
-			//	vkDestroyShaderEXT(device, vertexShader, nullptr);
-			//});
-			VkShaderEXT fragmentShader = shaderEXTs[1];
-			//deviceDeletionQueue.push_back([fragmentShader](VkDevice device) {
-			//	vkDestroyShaderEXT(device, fragmentShader, nullptr);
-			//});
-		}else {
-			std::cout << "Shader creation failed" << std::endl;
-		}*/
-		return shaderEXTs;
+	if (result == VkResult::VK_SUCCESS) {
+		std::cout << "Successfully made shaders" << std::endl;
+		VkShaderEXT vertexShader = shaderEXTs[0];
+		//deviceDeletionQueue.push_back([vertexShader](VkDevice device) {
+		//	vkDestroyShaderEXT(device, vertexShader, nullptr);
+		//});
+		VkShaderEXT fragmentShader = shaderEXTs[1];
+		//deviceDeletionQueue.push_back([fragmentShader](VkDevice device) {
+		//	vkDestroyShaderEXT(device, fragmentShader, nullptr);
+		//});
+	}else {
+		std::cout << "Shader creation failed" << std::endl;
+	}
+	return shaderEXTs;
 }
 
 std::vector<char> VkShader::read_file(const char* filename) {

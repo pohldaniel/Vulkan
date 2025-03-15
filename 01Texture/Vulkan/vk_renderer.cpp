@@ -47,6 +47,35 @@ bool isTypeOf(VkPhysicalDevice& device, VkPhysicalDeviceType physicalDeviceType)
 //https://gamedev.stackexchange.com/questions/124738/how-to-select-the-most-powerful-vkdevice
 bool vk_init(VkContext *vkcontext, void *window)
 {
+
+	/*uint32_t amountOfInstanceLayers = 0;
+	vkEnumerateInstanceLayerProperties(&amountOfInstanceLayers, NULL);
+	VkLayerProperties* instanceLayers = new VkLayerProperties[amountOfInstanceLayers];
+	vkEnumerateInstanceLayerProperties(&amountOfInstanceLayers, instanceLayers);
+
+	std::cout << "Amount of Instance Layers: " << amountOfInstanceLayers << std::endl;
+
+	for (size_t i = 0; i < amountOfInstanceLayers; i++){
+		std::cout << std::endl;
+		std::cout << "Name:         " << instanceLayers[i].layerName << std::endl;
+		std::cout << "Spec Version: " << instanceLayers[i].specVersion << std::endl;
+		std::cout << "Impl Version: " << instanceLayers[i].implementationVersion << std::endl;
+		std::cout << "Description:  " << instanceLayers[i].description << std::endl;
+	}
+
+	uint32_t amountOfInstanceExtensions = 0;
+	vkEnumerateInstanceExtensionProperties(NULL, &amountOfInstanceExtensions, NULL);
+	VkExtensionProperties* instanceExtensions = new VkExtensionProperties[amountOfInstanceExtensions];
+	vkEnumerateInstanceExtensionProperties(NULL, &amountOfInstanceExtensions, instanceExtensions);
+	std::cout << std::endl;
+	std::cout << "Amount of Instance Extension: " << amountOfInstanceExtensions << std::endl;
+
+	for (size_t i = 0; i < amountOfInstanceExtensions; i++) {
+		std::cout << std::endl;
+		std::cout << "Name:         " << instanceExtensions[i].extensionName << std::endl;
+		std::cout << "Spec Version: " << instanceExtensions[i].specVersion << std::endl;
+	}*/
+	
 	vkcontext->screenSize.width = Application::Width;
 	vkcontext->screenSize.height = Application::Height;
 
@@ -56,26 +85,23 @@ bool vk_init(VkContext *vkcontext, void *window)
 	appInfo.pEngineName = "Ponggine";
 	appInfo.apiVersion = VK_API_VERSION_1_4;
 
-	const char *extensions[] = {
-		VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-		VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-		VK_KHR_SURFACE_EXTENSION_NAME,
-		//VK_KHR_SHADER_TERMINATE_INVOCATION_EXTENSION_NAME,
-		//VK_EXT_SHADER_OBJECT_EXTENSION_NAME,
-		//VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME 
+	const char * instanceExtensionsList[] = {
+		"VK_KHR_win32_surface",
+		"VK_EXT_debug_utils",
+		"VK_KHR_surface",
 	};
 
-	const char *layers[]{
-		"VK_LAYER_KHRONOS_validation" 
+	const char * instanceLayersList[]{
+		"VK_LAYER_KHRONOS_validation", 
 	};
 
 	VkInstanceCreateInfo instanceInfo = {};
 	instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	instanceInfo.pApplicationInfo = &appInfo;
-	instanceInfo.ppEnabledExtensionNames = extensions;
-	instanceInfo.enabledExtensionCount = ArraySize(extensions);
-	instanceInfo.ppEnabledLayerNames = layers;
-	instanceInfo.enabledLayerCount = ArraySize(layers);
+	instanceInfo.ppEnabledExtensionNames = instanceExtensionsList;
+	instanceInfo.enabledExtensionCount = ArraySize(instanceExtensionsList);
+	instanceInfo.ppEnabledLayerNames = instanceLayersList;
+	instanceInfo.enabledLayerCount = ArraySize(instanceLayersList);
 	VK_CHECK(vkCreateInstance(&instanceInfo, 0, &vkcontext->instance));
 
 	auto vkCreateDebugUtilsMessengerEXT = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(vkcontext->instance, "vkCreateDebugUtilsMessengerEXT");
@@ -142,11 +168,38 @@ bool vk_init(VkContext *vkcontext, void *window)
 			}
 		}
 
-		if (vkcontext->graphicsIdx < 0)
-		{
+		if (vkcontext->graphicsIdx < 0){
 			return false;
 		}
 	}
+
+	/*uint32_t amountOfDeviceLayers = 0;
+	vkEnumerateDeviceLayerProperties(vkcontext->gpu, &amountOfDeviceLayers, NULL);
+	VkLayerProperties* deviceLayers = new VkLayerProperties[amountOfDeviceLayers];
+	vkEnumerateDeviceLayerProperties(vkcontext->gpu, &amountOfDeviceLayers, deviceLayers);
+	std::cout << std::endl;
+	std::cout << "Amount of Device Layers: " << amountOfDeviceLayers << std::endl;
+
+	for (size_t i = 0; i < amountOfDeviceLayers; i++) {
+		std::cout << std::endl;
+		std::cout << "Name:         " << deviceLayers[i].layerName << std::endl;
+		std::cout << "Spec Version: " << deviceLayers[i].specVersion << std::endl;
+		std::cout << "Impl Version: " << deviceLayers[i].implementationVersion << std::endl;
+		std::cout << "Description:  " << deviceLayers[i].description << std::endl;
+	}
+
+	uint32_t amountOfDeviceExtensions = 0;
+	vkEnumerateDeviceExtensionProperties(vkcontext->gpu, NULL, &amountOfDeviceExtensions, NULL);
+	VkExtensionProperties* deviceExtensions = new VkExtensionProperties[amountOfDeviceExtensions];
+	vkEnumerateDeviceExtensionProperties(vkcontext->gpu, NULL, &amountOfDeviceExtensions, deviceExtensions);
+	std::cout << std::endl;
+	std::cout << "Amount of Device Extension: " << amountOfDeviceExtensions << std::endl;
+	std::cout << std::endl;
+	for (size_t i = 0; i < amountOfDeviceExtensions; i++) {
+		
+		std::cout << "Name:         " << deviceExtensions[i].extensionName << std::endl;
+		//std::cout << "Spec Version: " << deviceExtensions[i].specVersion << std::endl;
+	}*/
 
 	// Logical Device
 	{
@@ -158,19 +211,36 @@ bool vk_init(VkContext *vkcontext, void *window)
 		queueInfo.queueCount = 1;
 		queueInfo.pQueuePriorities = &queuePriority;
 
-		const char *extensions[] = {
-			VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+		
+		const char * deviceExtensionsList[] = {
+			"VK_KHR_shader_terminate_invocation",
+			"VK_EXT_shader_object",
+			"VK_KHR_swapchain"
+		};
+
+		VkPhysicalDeviceShaderObjectFeaturesEXT deviceShaderObjectFeatures = {};
+		deviceShaderObjectFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT;
+		deviceShaderObjectFeatures.shaderObject = VK_TRUE;
 
 		VkPhysicalDeviceFeatures deviceFeatures = {};
 		deviceFeatures.fillModeNonSolid = VK_TRUE;
+		
+		VkPhysicalDeviceFeatures2 deviceFeatures2 = {};
+		deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+		deviceFeatures2.features = deviceFeatures;
+		deviceFeatures2.pNext = &deviceShaderObjectFeatures;
 
 		VkDeviceCreateInfo deviceInfo = {};
 		deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 		deviceInfo.pQueueCreateInfos = &queueInfo;
 		deviceInfo.queueCreateInfoCount = 1;
-		deviceInfo.ppEnabledExtensionNames = extensions;
-		deviceInfo.enabledExtensionCount = ArraySize(extensions);
-		deviceInfo.pEnabledFeatures = &deviceFeatures;
+		deviceInfo.ppEnabledExtensionNames = deviceExtensionsList;
+		deviceInfo.enabledExtensionCount = ArraySize(deviceExtensionsList);
+		//deviceInfo.pEnabledFeatures = &deviceFeatures;
+		deviceInfo.pEnabledFeatures = NULL;
+		deviceInfo.pNext = &deviceFeatures2;
+
+
 		VK_CHECK(vkCreateDevice(vkcontext->gpu, &deviceInfo, 0, &vkcontext->device));
 
 		// Get Graphics Queue
@@ -308,27 +378,59 @@ bool vk_init(VkContext *vkcontext, void *window)
 	// Create Descriptor Set Layouts
 	{
 		VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
+		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 		samplerLayoutBinding.binding = 0;
 		samplerLayoutBinding.descriptorCount = 1;
 		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
 		VkDescriptorSetLayoutCreateInfo layoutInfo = {};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		layoutInfo.bindingCount = 1;
 		layoutInfo.pBindings = &samplerLayoutBinding;
 
-		VK_CHECK(vkCreateDescriptorSetLayout(vkcontext->device, &layoutInfo, 0, &vkcontext->setLayout));
-
-	
+		VK_CHECK(vkCreateDescriptorSetLayout(vkcontext->device, &layoutInfo, 0, &vkcontext->setLayout));	
 	}
-
-	// Create Pipeline Layout
 	{
+		VkDescriptorSetLayoutCreateInfo emptyLayoutInfo = {};
+		emptyLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		emptyLayoutInfo.flags = 0;
+		emptyLayoutInfo.pNext = NULL;
+		emptyLayoutInfo.bindingCount = 0;
+		emptyLayoutInfo.pBindings = NULL;
+
+		VkDescriptorSetLayout emptyLayout;
+		VK_CHECK(vkCreateDescriptorSetLayout(vkcontext->device, &emptyLayoutInfo, NULL, &emptyLayout));
+
+
+		VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
+		samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+		samplerLayoutBinding.binding = 0;
+		samplerLayoutBinding.descriptorCount = 1;
+		samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		
+		
+		VkDescriptorSetLayoutCreateInfo sampleLayoutInfo = {};
+		sampleLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+		sampleLayoutInfo.flags = 0;
+		sampleLayoutInfo.pNext = NULL;
+		sampleLayoutInfo.bindingCount = 1;
+		sampleLayoutInfo.pBindings = &samplerLayoutBinding;
+
+		VkDescriptorSetLayout samplerLayout;
+		VK_CHECK(vkCreateDescriptorSetLayout(vkcontext->device, &sampleLayoutInfo, NULL, &samplerLayout));
+		
+	
+	
+	
+	// Create Pipeline Layout
+		VkDescriptorSetLayout descriptorSetLayouts[2] = { emptyLayout, samplerLayout };
 		VkPipelineLayoutCreateInfo layoutInfo = {};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		layoutInfo.setLayoutCount = 1;
-		layoutInfo.pSetLayouts = &vkcontext->setLayout;
+		layoutInfo.setLayoutCount = 2;
+		layoutInfo.pSetLayouts = descriptorSetLayouts;
+		//layoutInfo.pSetLayouts = descriptorSetLayouts;
+	
+
 		VK_CHECK(vkCreatePipelineLayout(vkcontext->device, &layoutInfo, 0, &vkcontext->pipeLayout));
 	}
 
@@ -374,12 +476,50 @@ bool vk_init(VkContext *vkcontext, void *window)
 		multisampleState.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
 		multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-		VkShaderModule vertexShader, fragmentShader;
+		// Create Sampler
+		{
+			VkSamplerCreateInfo samplerInfo = {};
+			samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+			samplerInfo.minFilter = VK_FILTER_NEAREST;
+			samplerInfo.magFilter = VK_FILTER_NEAREST;
 
-		VkShader shader;
+			VK_CHECK(vkCreateSampler(vkcontext->device, &samplerInfo, 0, &vkcontext->sampler));
+		}
+
+		// Create Descriptor Pool
+		{
+			VkDescriptorPoolSize poolSize = {};
+			poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			poolSize.descriptorCount = 1;
+
+			VkDescriptorPoolCreateInfo poolInfo = {};
+			poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+			poolInfo.maxSets = 1;
+			poolInfo.poolSizeCount = 1;
+			poolInfo.pPoolSizes = &poolSize;
+			VK_CHECK(vkCreateDescriptorPool(vkcontext->device, &poolInfo, 0, &vkcontext->descPool));
+		}
+
+		// Create Descriptor Set
+		{
+			VkDescriptorSetAllocateInfo allocInfo = {};
+			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+			allocInfo.pSetLayouts = &vkcontext->setLayout;
+			allocInfo.descriptorSetCount = 1;
+			allocInfo.descriptorPool = vkcontext->descPool;
+			VK_CHECK(vkAllocateDescriptorSets(vkcontext->device, &allocInfo, &vkcontext->descSet));
+		}
 
 		std::vector<uint32_t> vertexCode, fragmentCode;
-		shader.make_shader_objects(vkcontext->instance, vkcontext->device, "shader", vertexCode, fragmentCode);
+		//uint32_t lengthInBytes;
+		//uint32_t* _vertexCode = (uint32_t*)platform_read_file("res/shader/shader.sprv.vert", &lengthInBytes);
+		//vertexCode = std::vector<uint32_t>(_vertexCode, _vertexCode + lengthInBytes / sizeof(uint32_t));
+		//uint32_t* _fragmentCode = (uint32_t*)platform_read_file("res/shader/shader.sprv.frag", &lengthInBytes);
+		//fragmentCode = std::vector<uint32_t>(_fragmentCode, _fragmentCode + lengthInBytes / sizeof(uint32_t));
+	
+		VkShaderModule vertexShader, fragmentShader;
+		VkShader shader;
+		vkcontext->shaders = shader.make_shader_objects(vkcontext->instance, vkcontext->device, "shader", vertexCode, fragmentCode, true);
 
 
 		// Vertex Shader
@@ -596,40 +736,6 @@ bool vk_init(VkContext *vkcontext, void *window)
 		VK_CHECK(vkCreateImageView(vkcontext->device, &viewInfo, 0, &vkcontext->image.view));
 	}
 
-	// Create Sampler
-	{
-		VkSamplerCreateInfo samplerInfo = {};
-		samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-		samplerInfo.minFilter = VK_FILTER_NEAREST;
-		samplerInfo.magFilter = VK_FILTER_NEAREST;
-
-		VK_CHECK(vkCreateSampler(vkcontext->device, &samplerInfo, 0, &vkcontext->sampler));
-	}
-
-	// Create Descriptor Pool
-	{
-		VkDescriptorPoolSize poolSize = {};
-		poolSize.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		poolSize.descriptorCount = 1;
-
-		VkDescriptorPoolCreateInfo poolInfo = {};
-		poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		poolInfo.maxSets = 1;
-		poolInfo.poolSizeCount = 1;
-		poolInfo.pPoolSizes = &poolSize;
-		VK_CHECK(vkCreateDescriptorPool(vkcontext->device, &poolInfo, 0, &vkcontext->descPool));
-	}
-
-	// Create Descriptor Set
-	{
-		VkDescriptorSetAllocateInfo allocInfo = {};
-		allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		allocInfo.pSetLayouts = &vkcontext->setLayout;
-		allocInfo.descriptorSetCount = 1;
-		allocInfo.descriptorPool = vkcontext->descPool;
-		VK_CHECK(vkAllocateDescriptorSets(vkcontext->device, &allocInfo, &vkcontext->descSet));
-	}
-
 	// Update Descriptor Set
 	{
 		VkDescriptorImageInfo imgInfo = {};
@@ -694,16 +800,16 @@ bool vk_render(VkContext *vkcontext)
 		vkCmdSetViewport(cmd, 0, 1, &viewport);
 		vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkcontext->pipeLayout,
-			0, 1, &vkcontext->descSet, 0, 0);
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkcontext->pipeLayout, 1, 1, &vkcontext->descSet, 0, 0);
 
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkcontext->enableWireFrame ? vkcontext->wireframe : vkcontext->solid);
+
+		//VkShaderStageFlagBits stages[2] = { VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT, VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT};
+
+		//auto vkCmdBindShadersEXT = (PFN_vkCmdBindShadersEXT)vkGetInstanceProcAddr(vkcontext->instance, "vkCmdBindShadersEXT");
+		//vkCmdBindShadersEXT(cmd,2, stages,reinterpret_cast<const VkShaderEXT*>(vkcontext->shaders.data()));
+
 		vkCmdDraw(cmd, 6, 1, 0, 0);
-		// Actually draw
-		// Bind pipe
-		// Bind desc
-		// Draw
-		// Reapeat
 	}
 
 	vkCmdEndRenderPass(cmd);
