@@ -391,7 +391,7 @@ bool vk_init(VkContext *vkcontext, void *window)
 		VK_CHECK(vkCreateDescriptorSetLayout(vkcontext->device, &layoutInfo, 0, &vkcontext->setLayout));	
 	}
 	{
-		VkDescriptorSetLayoutCreateInfo emptyLayoutInfo = {};
+		/*VkDescriptorSetLayoutCreateInfo emptyLayoutInfo = {};
 		emptyLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
 		emptyLayoutInfo.flags = 0;
 		emptyLayoutInfo.pNext = NULL;
@@ -399,7 +399,7 @@ bool vk_init(VkContext *vkcontext, void *window)
 		emptyLayoutInfo.pBindings = NULL;
 
 		VkDescriptorSetLayout emptyLayout;
-		VK_CHECK(vkCreateDescriptorSetLayout(vkcontext->device, &emptyLayoutInfo, NULL, &emptyLayout));
+		VK_CHECK(vkCreateDescriptorSetLayout(vkcontext->device, &emptyLayoutInfo, NULL, &emptyLayout));*/
 
 
 		VkDescriptorSetLayoutBinding samplerLayoutBinding = {};
@@ -423,13 +423,11 @@ bool vk_init(VkContext *vkcontext, void *window)
 	
 	
 	// Create Pipeline Layout
-		VkDescriptorSetLayout descriptorSetLayouts[2] = { emptyLayout, samplerLayout };
+		VkDescriptorSetLayout descriptorSetLayouts[1] = { samplerLayout };
 		VkPipelineLayoutCreateInfo layoutInfo = {};
 		layoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		layoutInfo.setLayoutCount = 2;
+		layoutInfo.setLayoutCount = 1;
 		layoutInfo.pSetLayouts = descriptorSetLayouts;
-		//layoutInfo.pSetLayouts = descriptorSetLayouts;
-	
 
 		VK_CHECK(vkCreatePipelineLayout(vkcontext->device, &layoutInfo, 0, &vkcontext->pipeLayout));
 	}
@@ -800,7 +798,7 @@ bool vk_render(VkContext *vkcontext)
 		vkCmdSetViewport(cmd, 0, 1, &viewport);
 		vkCmdSetScissor(cmd, 0, 1, &scissor);
 
-		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkcontext->pipeLayout, 1, 1, &vkcontext->descSet, 0, 0);
+		vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkcontext->pipeLayout, 0, 1, &vkcontext->descSet, 0, 0);
 
 		vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, vkcontext->enableWireFrame ? vkcontext->wireframe : vkcontext->solid);
 
