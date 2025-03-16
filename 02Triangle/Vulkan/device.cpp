@@ -1,5 +1,7 @@
 #include "device.h"
 
+#define ArraySize(arr) sizeof((arr)) / sizeof((arr[0]))
+
 bool supports(
     const VkPhysicalDevice& device,
 	const char** ppRequestedExtensions,
@@ -126,29 +128,36 @@ VkDevice create_logical_device(VkPhysicalDevice physicalDevice, VkSurfaceKHR sur
 	VkPhysicalDeviceFeatures deviceFeatures = {};
 	deviceFeatures.fillModeNonSolid = VK_TRUE;
 
-	VkPhysicalDeviceShaderObjectFeaturesEXT deviceShaderObjectFeatures = {};
-	deviceShaderObjectFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT;
-	deviceShaderObjectFeatures.shaderObject = VK_TRUE;
-
+	
 	VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRendering = {};
 	dynamicRendering.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
 	dynamicRendering.dynamicRendering = true;
-	dynamicRendering.pNext = &deviceShaderObjectFeatures;
+	//dynamicRendering.pNext = &deviceShaderObjectFeatures;
 
 	VkPhysicalDeviceFeatures2 deviceFeatures2 = {};
 	deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	deviceFeatures2.features = deviceFeatures;
 	deviceFeatures2.pNext = &dynamicRendering;
 
+	VkPhysicalDeviceShaderObjectFeaturesEXT deviceShaderObjectFeatures = {};
+	deviceShaderObjectFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT;
+	deviceShaderObjectFeatures.shaderObject = VK_TRUE;
+	deviceShaderObjectFeatures.pNext = &deviceFeatures2;
+
+	VkPhysicalDeviceSynchronization2Features deviceSynchronization2Features = {};
+	deviceSynchronization2Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
+	deviceSynchronization2Features.synchronization2 = VK_TRUE;
+	deviceSynchronization2Features.pNext = &deviceShaderObjectFeatures;
+
 	VkDeviceCreateInfo deviceInfo = {};
 	deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceInfo.pQueueCreateInfos = &queueInfo;
 	deviceInfo.queueCreateInfoCount = 1;
 	deviceInfo.ppEnabledExtensionNames = deviceExtensionsList;
-	deviceInfo.enabledExtensionCount = 3;
+	deviceInfo.enabledExtensionCount = ArraySize(deviceExtensionsList);
 	//deviceInfo.pEnabledFeatures = &deviceFeatures;
 	deviceInfo.pEnabledFeatures = NULL;
-	deviceInfo.pNext = &deviceFeatures2;
+	deviceInfo.pNext = &deviceSynchronization2Features;
 
 	VkDevice device = nullptr;
 	auto result = vkCreateDevice(physicalDevice, &deviceInfo, 0, &device);

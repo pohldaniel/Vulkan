@@ -31,4 +31,5 @@ private:
     std::vector<VkShaderEXT> shaders;
     VkCommandPool commandPool;
     VkRenderingInfoKHR renderingInfo;
+    uint32_t graphicsQueueFamilyIndex;
 };

@@ -33,6 +33,7 @@ void Frame::set_command_buffer(VkInstance instance, VkCommandBuffer newCommandBu
 	auto vkCmdBindShadersEXT = (PFN_vkCmdBindShadersEXT)vkGetInstanceProcAddr(instance, "vkCmdBindShadersEXT");
 	auto vkCmdBeginRenderingKHR = (PFN_vkCmdBeginRenderingKHR)vkGetInstanceProcAddr(instance, "vkCmdBeginRenderingKHR");
 	auto vkCmdEndRenderingKHR = (PFN_vkCmdEndRenderingKHR)vkGetInstanceProcAddr(instance, "vkCmdEndRenderingKHR");
+	auto vkCmdSetVertexInputEXT = (PFN_vkCmdSetVertexInputEXT)vkGetInstanceProcAddr(instance, "vkCmdSetVertexInputEXT");
 
 	commandBuffer = newCommandBuffer;
 
@@ -45,7 +46,7 @@ void Frame::set_command_buffer(VkInstance instance, VkCommandBuffer newCommandBu
 	transition_image_layout(commandBuffer, image,
 		VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
 		VkAccessFlagBits::VK_ACCESS_NONE, VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-		VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+		VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
 	annoying_boilerplate_that_dynamic_rendering_was_meant_to_spare_us(instance, frameSize);
 
@@ -55,6 +56,9 @@ void Frame::set_command_buffer(VkInstance instance, VkCommandBuffer newCommandBu
 		VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT,
 		VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT
 	};
+
+	vkCmdSetVertexInputEXT(commandBuffer,0, NULL, 0, NULL);
+
 	vkCmdBindShadersEXT(commandBuffer, 2, stages, shaders.data());
 	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
@@ -64,7 +68,7 @@ void Frame::set_command_buffer(VkInstance instance, VkCommandBuffer newCommandBu
 	transition_image_layout(commandBuffer, image,
 		VkImageLayout::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 		VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VkAccessFlagBits::VK_ACCESS_NONE,
-		VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+		VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
 	vkEndCommandBuffer(commandBuffer);
 	
@@ -148,53 +152,25 @@ void Frame::annoying_boilerplate_that_dynamic_rendering_was_meant_to_spare_us(Vk
 	scissor.offset = { 0,0 };
 	scissor.extent = frameSize;
 
-	//vk::CommandBuffer newCommandBuffer;
-	//newCommandBuffer.setScissorWithCount(scissor, dl);
+
 	vkCmdSetScissorWithCount(commandBuffer, 1, &scissor);
-
-	//newCommandBuffer.setRasterizerDiscardEnable(0, dl);
 	vkCmdSetRasterizerDiscardEnable(commandBuffer, 0);
-
-	//newCommandBuffer.setPolygonModeEXT(vk::PolygonMode::eFill, dl);
 	vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
-
-	//newCommandBuffer.setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1, dl);
 	vkCmdSetRasterizationSamplesEXT(commandBuffer, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT);
 
 
 	uint32_t sampleMask = 1;
-	//newCommandBuffer.setSampleMaskEXT(vk::SampleCountFlagBits::e1, sampleMask, dl);
 	vkCmdSetSampleMaskEXT(commandBuffer, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, &sampleMask);
-
-	//newCommandBuffer.setAlphaToCoverageEnableEXT(0, dl);
 	vkCmdSetAlphaToCoverageEnableEXT(commandBuffer, 0);
-
-	//newCommandBuffer.setCullMode(vk::CullModeFlagBits::eNone, dl);
 	vkCmdSetCullMode(commandBuffer, VkCullModeFlagBits::VK_CULL_MODE_NONE);
-
-	//newCommandBuffer.setDepthTestEnable(0, dl);
 	vkCmdSetDepthTestEnable(commandBuffer, 0);
-
-
-	//newCommandBuffer.setDepthWriteEnable(0, dl);
 	vkCmdSetDepthWriteEnable(commandBuffer, 0);
-
-
-	//newCommandBuffer.setDepthBiasEnable(0, dl);
 	vkCmdSetDepthBiasEnable(commandBuffer, 0);
-
-	//newCommandBuffer.setStencilTestEnable(0, dl);
 	vkCmdSetStencilTestEnable(commandBuffer, 0);
-
-	//newCommandBuffer.setPrimitiveTopology(vk::PrimitiveTopology::eTriangleList, dl);
 	vkCmdSetPrimitiveTopology(commandBuffer, VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-
-
-	//newCommandBuffer.setPrimitiveRestartEnable(0, dl);
 	vkCmdSetPrimitiveRestartEnable(commandBuffer, 0);
 
 	uint32_t colorBlendEnable = 0;
-	//newCommandBuffer.setColorBlendEnableEXT(0, colorBlendEnable, dl);
 	vkCmdSetColorBlendEnableEXT(commandBuffer, 0, 1, &colorBlendEnable);
 
 
@@ -202,15 +178,14 @@ void Frame::annoying_boilerplate_that_dynamic_rendering_was_meant_to_spare_us(Vk
 	equation.colorBlendOp = VkBlendOp::VK_BLEND_OP_ADD;
 	equation.dstColorBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ZERO;
 	equation.srcColorBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ONE;
+	equation.alphaBlendOp = VkBlendOp::VK_BLEND_OP_ADD;
 	equation.dstAlphaBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ZERO;
 	equation.srcAlphaBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ONE;
-	//newCommandBuffer.setColorBlendEquationEXT(0, equation, dl);
 	vkCmdSetColorBlendEquationEXT(commandBuffer, 0, 1, &equation);
 
 	VkColorComponentFlags colorWriteMask = VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT
 		| VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT
 		| VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT
 		| VkColorComponentFlagBits::VK_COLOR_COMPONENT_A_BIT;
-	//newCommandBuffer.setColorWriteMaskEXT(0, colorWriteMask, dl);
 	vkCmdSetColorWriteMaskEXT(commandBuffer, 0, 1, &colorWriteMask);
 }

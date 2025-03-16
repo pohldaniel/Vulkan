@@ -74,7 +74,7 @@ std::vector<VkShaderEXT> VkShader::make_shader_objects(VkInstance instance, VkDe
 
 		info.options = shaderc_compile_options_initialize();
 		shaderc_compile_options_set_target_env(info.options, shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
-		shaderc_compile_options_set_target_env(info.options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
+		shaderc_compile_options_set_target_env(info.options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
 		shaderc_compile_options_set_source_language(info.options, shaderc_source_language_glsl);
 		shaderc_compile_options_set_target_spirv(info.options, shaderc_spirv_version_1_6);
 		shaderc_compile_options_set_optimization_level(info.options, shaderc_optimization_level_performance);

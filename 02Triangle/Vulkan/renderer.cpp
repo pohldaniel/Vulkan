@@ -27,7 +27,7 @@ Engine::Engine(void* window, int width, int height)  {
 	physicalDevice = choose_physical_device(instance);
 
 	logicalDevice = create_logical_device(physicalDevice, surface, deviceDeletionQueue);
-	uint32_t graphicsQueueFamilyIndex = find_queue_family_index(physicalDevice, surface, VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT);
+	graphicsQueueFamilyIndex = find_queue_family_index(physicalDevice, surface, VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT);
 	vkGetDeviceQueue(logicalDevice, graphicsQueueFamilyIndex, 0, &graphicsQueue);
 
 
@@ -56,17 +56,17 @@ Engine::Engine(void* window, int width, int height)  {
 
 void Engine::draw() {
 
-	uint32_t imageIndex{ 0 };
+	uint32_t imageIndex = 0;
+
+	//vkAcquireNextImageKHR(logicalDevice, swapchain.chain, UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE, &imageIndex);
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &frames[0].commandBuffer;
 
-	//graphicsQueue.submit(submitInfo);
-	vkQueueSubmit(graphicsQueue, 1, &submitInfo, {});
 
-	//graphicsQueue.waitIdle();
+	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
 	vkQueueWaitIdle(graphicsQueue);
 
 	VkPresentInfoKHR presentInfo = {};
@@ -75,7 +75,6 @@ void Engine::draw() {
 	presentInfo.pSwapchains = &swapchain.chain;
 	presentInfo.pImageIndices = &imageIndex;
 
-	//graphicsQueue.presentKHR(presentInfo);
 	vkQueuePresentKHR(graphicsQueue, &presentInfo);
 	vkQueueWaitIdle(graphicsQueue);
 }

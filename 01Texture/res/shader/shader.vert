@@ -2,25 +2,15 @@
 
 layout (location = 0) out vec2 uv;
 
-vec4 vertices[6] = {
-    // Bottom left
-    vec4(-0.5, 0.5, 0.0, 1.0),
 
-    // Top Left
-    vec4(-0.5, -0.5, 0.0, 0.0),
-
-    // Top Right
-    vec4(0.5, -0.5, 1.0, 0.0),
-
-    // Top Right
-    vec4(0.5, -0.5, 1.0, 0.0),
-
-    // Bottom Right
-    vec4(0.5, 0.5, 1.0, 1.0),
-
-    // Bottom Left
-    vec4(-0.5, 0.5, 0.0, 1.0),
-};
+vec4 vertices[6] = vec4[](
+	vec4(-0.5, 0.5, 0.0, 1.0),
+	vec4(-0.5, -0.5, 0.0, 0.0),
+	vec4(0.5, -0.5, 1.0, 0.0),
+	vec4(0.5, -0.5, 1.0, 0.0),	 
+	vec4(0.5, 0.5, 1.0, 1.0),
+	vec4(-0.5, 0.5, 0.0, 1.0)
+);
 
 void main()
 {

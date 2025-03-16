@@ -83,7 +83,7 @@ bool vk_init(VkContext *vkcontext, void *window)
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = "Pong";
 	appInfo.pEngineName = "Ponggine";
-	appInfo.apiVersion = VK_API_VERSION_1_4;
+	appInfo.apiVersion = VK_API_VERSION_1_3;
 
 	const char * instanceExtensionsList[] = {
 		"VK_KHR_win32_surface",
