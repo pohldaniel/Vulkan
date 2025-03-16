@@ -123,7 +123,7 @@ std::vector<VkShaderEXT> make_shader_objects(VkInstance instance, VkDevice logic
     shaderc_compile_options_set_target_env(info.options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
     shaderc_compile_options_set_source_language(info.options, shaderc_source_language_glsl);
     shaderc_compile_options_set_target_spirv(info.options, shaderc_spirv_version_1_6);
-    shaderc_compile_options_set_optimization_level(info.options, shaderc_optimization_level_zero);
+    shaderc_compile_options_set_optimization_level(info.options, shaderc_optimization_level_performance);
 
     preprocess_shader(info);
     compile_file_to_assembly(info);
