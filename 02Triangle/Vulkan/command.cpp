@@ -12,11 +12,8 @@ VkCommandPool make_command_pool(VkDevice logicalDevice, uint32_t queueFamilyInde
 
 	auto result = vkCreateCommandPool(logicalDevice, &poolInfo, 0, &pool);
 	if (result == VkResult::VK_SUCCESS) {
-		std::cout << "Command pool created successfully" << std::endl;
-
 		deletionQueue.push_back([pool](VkDevice device) {
 			vkDestroyCommandPool(device, pool, NULL);
-			std::cout << "Destroyed command pool!" << std::endl;
 		});
 	}else {
 		std::cout << "Command pool creation failed" << std::endl;

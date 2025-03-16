@@ -63,7 +63,7 @@ void Frame::set_command_buffer(VkInstance instance, VkCommandBuffer newCommandBu
 	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
 	vkCmdEndRenderingKHR(commandBuffer);
-
+	
 
 	transition_image_layout(commandBuffer, image,
 		VkImageLayout::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,

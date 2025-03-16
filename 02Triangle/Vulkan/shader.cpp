@@ -12,10 +12,6 @@ struct CompilationInfo {
     shaderc_compile_options_t options;
 };
 
-/**
-* @brief preprocess GLSL shader source code
-* 
-*/
 void preprocess_shader(CompilationInfo& info) {
 
     shaderc_compiler_t compiler = shaderc_compiler_initialize();
@@ -25,16 +21,15 @@ void preprocess_shader(CompilationInfo& info) {
         std::cout << "Error: preprocess" << std::endl;
     }
 
-    //copy result into info for next compilation operation
     const char* src = reinterpret_cast<const char*>(shaderc_result_get_bytes(result));
     size_t newSize = reinterpret_cast<const char*>(shaderc_result_get_bytes(result)) + shaderc_result_get_length(result) / sizeof(char) - src;
     info.source.resize(newSize);
     memcpy(info.source.data(), src, newSize);
 
     //Log output for fun
-    std::cout << "---- Preprocessed GLSL source code ----" << std::endl;
-    std::string output = { info.source.data(), info.source.data() + info.source.size() };
-    std::cout << output << std::endl;
+    //std::cout << "---- Preprocessed GLSL source code ----" << std::endl;
+    //std::string output = { info.source.data(), info.source.data() + info.source.size() };
+    //std::cout << output << std::endl;
 }
 
 void compile_file_to_assembly(CompilationInfo& info) {
@@ -44,24 +39,17 @@ void compile_file_to_assembly(CompilationInfo& info) {
         std::cout << "Error: toSpvAssembly" << std::endl;
     }
 
-    //copy result into info for next compilation operation
     const char* src = reinterpret_cast<const char*>(shaderc_result_get_bytes(result));
     size_t newSize = reinterpret_cast<const char*>(shaderc_result_get_bytes(result)) + shaderc_result_get_length(result) / sizeof(char) - src;
     info.source.resize(newSize);
     memcpy(info.source.data(), src, newSize);
 
     //Log output for fun
-    std::cout << "---- SPIR-V Assembly code ----" << std::endl;
-    std::string output = { info.source.data(), info.source.data() + info.source.size() };
-    std::cout << output << std::endl;
+    //std::cout << "---- SPIR-V Assembly code ----" << std::endl;
+    //std::string output = { info.source.data(), info.source.data() + info.source.size() };
+    //std::cout << output << std::endl;
 }
 
-/**
-* @brief Compiles SPIR - V assembly to a SPIR-V binary
-* 
-* @return the SPIR-V binary code as a buffer of 32 bit words
-*
-*/
 std::vector<uint32_t> compile_file(CompilationInfo& info) {
 
     shaderc_compiler_t compiler = shaderc_compiler_initialize();
@@ -70,18 +58,17 @@ std::vector<uint32_t> compile_file(CompilationInfo& info) {
         std::cout << "Error: compile" << std::endl;
     }
 
-    //copy result to the final output
     const uint32_t* src = reinterpret_cast<const uint32_t*>(shaderc_result_get_bytes(result));
     size_t wordCount = shaderc_result_get_length(result) / sizeof(uint32_t);
     std::vector<uint32_t> output(wordCount);
     memcpy(output.data(), src, shaderc_result_get_length(result));
 
     //Log output for fun
-    std::cout << "---- SPIR-V Binary Code ----" << std::endl;
-    std::cout << "Magic Number: " << std::endl;
-    std::stringstream converter;
-    converter << output[0];
-    std::cout << converter.str() << std::endl;
+    //std::cout << "---- SPIR-V Binary Code ----" << std::endl;
+    //std::cout << "Magic Number: " << std::endl;
+    //std::stringstream converter;
+    //converter << output[0];
+    //std::cout << converter.str() << std::endl;
 
     return output;
 }
@@ -90,23 +77,6 @@ std::vector<VkShaderEXT> make_shader_objects(VkInstance instance, VkDevice logic
 
     std::stringstream filenameBuilder;
     std::string filename;
-
-    /*
-    ShaderCreateInfoEXT(
-        vk::ShaderCreateFlagsEXT flags_ = {},
-        vk::ShaderStageFlagBits  stage_ = vk::ShaderStageFlagBits::eVertex,
-        vk::ShaderStageFlags nextStage_ = {},
-        vk::ShaderCodeTypeEXT codeType_ = vk::ShaderCodeTypeEXT::eBinary,
-        size_t               codeSize_  = {},
-        const void *         pCode_     = {},
-        const char *         pName_     = {},
-        uint32_t    setLayoutCount_     = {},
-        const vk::DescriptorSetLayout * pSetLayouts_ = {},
-        uint32_t pushConstantRangeCount_ = {},
-        const vk::PushConstantRange * pPushConstantRanges_ = {},
-        const kv::SpecializationInfo * pSpecializationInfo_ = {},
-        const void * pNext_            = nullptr)
-    */
 
     VkShaderCreateFlagsEXT flags = VkShaderCreateFlagBitsEXT::VK_SHADER_CREATE_LINK_STAGE_BIT_EXT;
     VkShaderStageFlags nextStage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -161,14 +131,6 @@ std::vector<VkShaderEXT> make_shader_objects(VkInstance instance, VkDevice logic
     fragmentInfo.pCode = fragmentCode.data();
     fragmentInfo.pName = pName;
 
-    /*
-        VKAPI_ATTR VkResult VKAPI_CALL vkCreateShadersEXT(
-            VkDevice                     device,
-            uint32_t                     createInfoCount,
-            const VkShaderCreateInfoEXT* pCreateInfos,
-            const VkAllocationCallbacks* pAllocator,
-            VkShaderEXT*                 pShaders);
-    */
     std::vector<VkShaderCreateInfoEXT> shaderInfo;
     shaderInfo.push_back(vertexInfo);
     shaderInfo.push_back(fragmentInfo);
@@ -180,15 +142,8 @@ std::vector<VkShaderEXT> make_shader_objects(VkInstance instance, VkDevice logic
 	VkResult result = vkCreateShadersEXT(logicalDevice, 2, shaderInfo.data(), nullptr, shaders.data());
     
     if (result == VkResult::VK_SUCCESS) {
-        std::cout << "Successfully made shaders" << std::endl;
         VkShaderEXT vertexShader = shaders[0];
-        //deviceDeletionQueue.push_back([vertexShader](VkDevice device) {
-        //	vkDestroyShaderEXT(device, vertexShader, nullptr);
-        //});
         VkShaderEXT fragmentShader = shaders[1];
-        //deviceDeletionQueue.push_back([fragmentShader](VkDevice device) {
-        //	vkDestroyShaderEXT(device, fragmentShader, nullptr);
-        //});
     }else {
         std::cout << "Shader creation failed" << std::endl;
     }

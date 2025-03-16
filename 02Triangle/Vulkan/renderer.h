@@ -32,4 +32,9 @@ private:
     VkCommandPool commandPool;
     VkRenderingInfoKHR renderingInfo;
     uint32_t graphicsQueueFamilyIndex;
+    uint32_t imageIndex = 0;
+
+    VkSemaphore imageAvailableSemaphore;
+    VkSemaphore renderFinishedSemaphore;
+    std::vector <VkPipelineStageFlags> waitStages;
 };

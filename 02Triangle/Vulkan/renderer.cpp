@@ -6,18 +6,13 @@
 
 Engine::Engine(void* window, int width, int height)  {
 
-
-	std::cout << "Made a graphics engine" << std::endl;
-
+	waitStages.push_back(VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 	instance = make_instance("Real Engine", instanceDeletionQueue);
-	//dldi = vk::detail::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
-	
+
 	VkWin32SurfaceCreateInfoKHR surfaceInfo = {};
 	surfaceInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 	surfaceInfo.hwnd = (HWND)window;
 	surfaceInfo.hinstance = GetModuleHandleA(0);
-	//instance.createWin32SurfaceKHR(&surfaceInfo, 0, &surface);
-
 	vkCreateWin32SurfaceKHR(instance, &surfaceInfo, 0, &surface);
 
 	instanceDeletionQueue.push_back([this](VkInstance instance) {
@@ -33,16 +28,13 @@ Engine::Engine(void* window, int width, int height)  {
 
 	swapchain.build(logicalDevice, physicalDevice, surface, width, height,deviceDeletionQueue);
 
-	//std::vector<VkImage> images = logicalDevice.getSwapchainImagesKHR(swapchain.chain).value;
 	uint32_t scImgCount = 0;
 	vkGetSwapchainImagesKHR(logicalDevice, swapchain.chain, &scImgCount, 0);
 	VkImage* images = new VkImage[scImgCount];
 	vkGetSwapchainImagesKHR(logicalDevice, swapchain.chain, &scImgCount, images);
 
 	for (uint32_t i = 0; i < scImgCount; ++i) {
-		frames.push_back(
-			Frame(images[i], logicalDevice,
-				swapchain.format.format, deviceDeletionQueue));
+		frames.push_back(Frame(images[i], logicalDevice, swapchain.format.format, deviceDeletionQueue));
 	}
 
 	shaders = make_shader_objects(instance, logicalDevice,"_shader", deviceDeletionQueue);
@@ -52,19 +44,26 @@ Engine::Engine(void* window, int width, int height)  {
 	for (uint32_t i = 0; i < scImgCount; ++i) {
 		frames[i].set_command_buffer(instance, allocate_command_buffer(logicalDevice, commandPool), shaders, swapchain.extent);
 	}
+
+	VkSemaphoreCreateInfo semaphoreInfo = {};
+	semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+	vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &imageAvailableSemaphore);
+	vkCreateSemaphore(logicalDevice, &semaphoreInfo, nullptr, &renderFinishedSemaphore);
 }
 
 void Engine::draw() {
 
-	uint32_t imageIndex = 0;
-
-	//vkAcquireNextImageKHR(logicalDevice, swapchain.chain, UINT64_MAX, VK_NULL_HANDLE, VK_NULL_HANDLE, &imageIndex);
+	vkAcquireNextImageKHR(logicalDevice, swapchain.chain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
-	submitInfo.pCommandBuffers = &frames[0].commandBuffer;
-
+	submitInfo.pCommandBuffers = &frames[imageIndex].commandBuffer;
+	submitInfo.waitSemaphoreCount = 1;
+	submitInfo.pWaitSemaphores = &imageAvailableSemaphore;
+	submitInfo.pWaitDstStageMask = waitStages.data();
+	submitInfo.signalSemaphoreCount = 1;
+	submitInfo.pSignalSemaphores = &renderFinishedSemaphore;
 
 	vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
 	vkQueueWaitIdle(graphicsQueue);
@@ -74,6 +73,8 @@ void Engine::draw() {
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &swapchain.chain;
 	presentInfo.pImageIndices = &imageIndex;
+	presentInfo.waitSemaphoreCount = 1;
+	presentInfo.pWaitSemaphores = &renderFinishedSemaphore;
 
 	vkQueuePresentKHR(graphicsQueue, &presentInfo);
 	vkQueueWaitIdle(graphicsQueue);
