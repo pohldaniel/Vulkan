@@ -8,7 +8,10 @@ bool supported_by_instance(const char** extensionNames, int extensionCount, cons
 	std::stringstream lineBuilder;
 
 	//check extension support
-	std::vector<vk::ExtensionProperties> supportedExtensions = vk::enumerateInstanceExtensionProperties().value;
+	uint32_t amountOfInstanceExtensions = 0;
+	vkEnumerateInstanceExtensionProperties(NULL, &amountOfInstanceExtensions, NULL);
+	VkExtensionProperties* instanceExtensions = new VkExtensionProperties[amountOfInstanceExtensions];
+	vkEnumerateInstanceExtensionProperties(NULL, &amountOfInstanceExtensions, instanceExtensions);
 
 	std::cout << "Instance can support the following extensions:" << std::endl;
 
@@ -16,8 +19,8 @@ bool supported_by_instance(const char** extensionNames, int extensionCount, cons
 	for (int i = 0; i < extensionCount; ++i) {
 		const char* extension = extensionNames[i];
 		found = false;
-		for (vk::ExtensionProperties supportedExtension : supportedExtensions) {
-			if (strcmp(extension, supportedExtension.extensionName) == 0) {
+		for (size_t i = 0; i < amountOfInstanceExtensions; i++) {
+			if (strcmp(extension, instanceExtensions[i].extensionName) == 0) {
 				found = true;
 				lineBuilder << "Extension \"" << extension << "\" is supported!";
 				std::cout << lineBuilder.str() << std::endl;
@@ -33,15 +36,18 @@ bool supported_by_instance(const char** extensionNames, int extensionCount, cons
 	}
 
 	//check layer support
-	std::vector<vk::LayerProperties> supportedLayers = vk::enumerateInstanceLayerProperties().value;
+	uint32_t amountOfInstanceLayers = 0;
+	vkEnumerateInstanceLayerProperties(&amountOfInstanceLayers, NULL);
+	VkLayerProperties* instanceLayers = new VkLayerProperties[amountOfInstanceLayers];
+	vkEnumerateInstanceLayerProperties(&amountOfInstanceLayers, instanceLayers);
 
 	std::cout << "Instance can support the following layers:" << std::endl;
 
 	for (int i = 0; i < layerCount; ++i) {
 		const char* layer = layerNames[i];
 		found = false;
-		for (vk::LayerProperties supportedLayer : supportedLayers) {
-			if (strcmp(layer, supportedLayer.layerName) == 0) {
+		for (size_t i = 0; i < amountOfInstanceLayers; i++) {
+			if (strcmp(layer, instanceLayers[i].layerName) == 0) {
 				found = true;
 				lineBuilder << "Layer \"" << layer << "\" is supported!";
 				std::cout << lineBuilder.str() << std::endl;;
@@ -59,25 +65,17 @@ bool supported_by_instance(const char** extensionNames, int extensionCount, cons
 	return true;
 }
 
-vk::Instance make_instance(const char* applicationName, std::deque<std::function<void(vk::Instance)>>& deletionQueue) {
+VkInstance make_instance(const char* applicationName, std::deque<std::function<void(VkInstance)>>& deletionQueue) {
 
 	std::cout << "Making an instance..." << std::endl;
 
-	uint32_t version = vk::enumerateInstanceVersion().value;
+	VkApplicationInfo appInfo = {};
+	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	appInfo.pApplicationName = "applicationName";
+	appInfo.pEngineName = "Doing it the hard way";
+	appInfo.apiVersion = VK_API_VERSION_1_4;
 
-
-
-	// set the patch to 0 for best compatibility/stability)
-	version &= ~(0xFFFU);
-
-	vk::ApplicationInfo appInfo = vk::ApplicationInfo(
-		applicationName,
-		version,
-		"Doing it the hard way",
-		version,
-		version
-	);
-
+	
 	/*
 	* Extensions
 	*/
@@ -141,25 +139,23 @@ vk::Instance make_instance(const char* applicationName, std::deque<std::function
 										 uint32_t                                      enabledExtensionCount_ = {},
 										 const char * const * ppEnabledExtensionNames_ = {} )
 	*/
-	vk::InstanceCreateInfo createInfo = vk::InstanceCreateInfo(
-		vk::InstanceCreateFlags(),
-		&appInfo,
-		1, instanceLayersList,
-		3, instanceExtensionsList
-	);
+	
 
-	vk::ResultValue<vk::Instance> instanceAttempt= vk::createInstance(createInfo);
-	if (instanceAttempt.result != vk::Result::eSuccess) {
-		std::cout << "Failed to create Instance!" << std::endl;
-		return nullptr;
-	}
+	VkInstanceCreateInfo instanceInfo = {};
+	instanceInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	instanceInfo.pApplicationInfo = &appInfo;
+	instanceInfo.ppEnabledExtensionNames = instanceExtensionsList;
+	instanceInfo.enabledExtensionCount = 3;
+	instanceInfo.ppEnabledLayerNames = instanceLayersList;
+	instanceInfo.enabledLayerCount = 1;
 
-	vk::Instance instance = instanceAttempt.value;
+	VkInstance instance;
+	vkCreateInstance(&instanceInfo, 0, &instance);
 
-	deletionQueue.push_back([](vk::Instance instance) {
-		instance.destroy();
+	deletionQueue.push_back([](VkInstance instance) {
+		vkDestroyInstance(instance, NULL);
 		std::cout << "Deleted Instance!" << std::endl;
-		});
+	});
 	
 
 	return instance;

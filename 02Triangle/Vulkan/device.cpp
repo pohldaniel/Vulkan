@@ -1,22 +1,27 @@
 #include "device.h"
 
 bool supports(
-    const vk::PhysicalDevice& device,
+    const VkPhysicalDevice& device,
 	const char** ppRequestedExtensions,
 	const uint32_t requestedExtensionCount) {
     
 	std::cout << "Requested Physical Device Extensions:" << std::endl;
 	std::cout << ppRequestedExtensions << "  "  << requestedExtensionCount << std::endl;
 
-    std::vector<vk::ExtensionProperties> extensions = device.enumerateDeviceExtensionProperties().value;
+    
+	uint32_t amountOfDeviceExtensions = 0;
+	vkEnumerateDeviceExtensionProperties(device, NULL, &amountOfDeviceExtensions, NULL);
+	VkExtensionProperties* deviceExtensions = new VkExtensionProperties[amountOfDeviceExtensions];
+	vkEnumerateDeviceExtensionProperties(device, NULL, &amountOfDeviceExtensions, deviceExtensions);
+
 	std::cout << "Physical Device Supported Extensions:" << std::endl;
 	//std::cout << extensions << std::endl;
 
-    for (uint32_t i = 0; i < requestedExtensionCount; ++i) {
+	/*for (uint32_t i = 0; i < requestedExtensionCount; ++i) {
         bool supported = false;
 
-	for (vk::ExtensionProperties& extension : extensions) {
-        std::string name = extension.extensionName;
+	for (size_t j = 0; j < amountOfDeviceExtensions; i++) {
+        std::string name = deviceExtensions[j].extensionName;
 		if (!name.compare(ppRequestedExtensions[i])) {
             supported = true;
             break;
@@ -25,12 +30,12 @@ bool supports(
         if (!supported) {
             return false;
         }
-    }
-
+    }*/
+	std::cout << "#############" << std::endl;
     return true;
 }
 
-bool is_suitable(const vk::PhysicalDevice& device) {
+bool is_suitable(const VkPhysicalDevice& device) {
 
 	std::cout << "Checking if device is suitable" << std::endl;
 
@@ -50,42 +55,37 @@ bool is_suitable(const vk::PhysicalDevice& device) {
 	return true;
 }
 
-vk::PhysicalDevice choose_physical_device(const vk::Instance& instance) {
+VkPhysicalDevice choose_physical_device(const VkInstance& instance) {
 
 	std::cout << "Choosing physical device..." << std::endl;
 
-	/*
-	* ResultValueType<std::vector<PhysicalDevice, PhysicalDeviceAllocator>>::type
-		Instance::enumeratePhysicalDevices( Dispatch const & d )
+	uint32_t deviceCount = 0;
+	vkEnumeratePhysicalDevices(instance, &deviceCount, 0);
+	VkPhysicalDevice* devices = new VkPhysicalDevice[deviceCount];
+	vkEnumeratePhysicalDevices(instance, &deviceCount, devices);
+	for (size_t i = 0; i < deviceCount; i++) {
 
-		std::vector<vk::PhysicalDevice> instance.enumeratePhysicalDevices( Dispatch const & d = static/default )
-	*/
-	std::vector<vk::PhysicalDevice> availableDevices = instance.enumeratePhysicalDevices().value;
-
-	for (vk::PhysicalDevice device : availableDevices) {
-
-		if (is_suitable(device)) {
-			return device;
+		if (is_suitable(devices[i])) {
+			return devices[i];
 		}
 	}
 
 	return nullptr;
 }
 
-uint32_t find_queue_family_index(vk::PhysicalDevice physicalDevice,
-	vk::SurfaceKHR surface,
-    vk::QueueFlags queueType) {
+uint32_t find_queue_family_index(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkQueueFlags queueType) {
 	
+	uint32_t count = 0;
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &count, NULL);
+	VkQueueFamilyProperties* queueFamilies = new VkQueueFamilyProperties[count];
+	vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &count, queueFamilies);
 
-	std::vector<vk::QueueFamilyProperties> queueFamilies = physicalDevice.getQueueFamilyProperties();
+	for (size_t i = 0; i < count; ++i) {
+		VkQueueFamilyProperties queueFamily = queueFamilies[i];
 
-	for (uint32_t i = 0; i < queueFamilies.size(); ++i) {
-		vk::QueueFamilyProperties queueFamily = queueFamilies[i];
-
-		bool canPresent = false;
+		VkBool32 canPresent = false;
 		if (surface) {
-			if (physicalDevice.getSurfaceSupportKHR(i, surface)
-					.result == vk::Result::eSuccess) {
+			if ( vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &canPresent) != VkResult::VK_SUCCESS) {
 				canPresent = true;
 			}
 		}
@@ -105,63 +105,68 @@ uint32_t find_queue_family_index(vk::PhysicalDevice physicalDevice,
 	return UINT32_MAX;
 }
 
-vk::Device create_logical_device(
-    vk::PhysicalDevice physicalDevice,
-	vk::SurfaceKHR surface,
-    std::deque<std::function<void(vk::Device)>>& deletionQueue) {
+VkDevice create_logical_device(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::deque<std::function<void(VkDevice)>>& deletionQueue) {
 	
-	uint32_t graphicsIndex = find_queue_family_index(physicalDevice, surface, vk::QueueFlagBits::eGraphics);
 	float queuePriority = 1.0f;
-	vk::DeviceQueueCreateInfo queueInfo = vk::DeviceQueueCreateInfo(
-		vk::DeviceQueueCreateFlags(), graphicsIndex, 1, &queuePriority
-	);
+	uint32_t graphicsIndex = find_queue_family_index(physicalDevice, surface, VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT);
+	VkDeviceQueueCreateInfo queueInfo = {};
+	queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueInfo.queueFamilyIndex = graphicsIndex;
+	queueInfo.queueCount = 1;
+	queueInfo.pQueuePriorities = &queuePriority;
 
-	vk::PhysicalDeviceFeatures deviceFeatures = vk::PhysicalDeviceFeatures();
-	vk::PhysicalDeviceShaderObjectFeaturesEXT shaderFeatures = vk::PhysicalDeviceShaderObjectFeaturesEXT(1);
-	vk::PhysicalDeviceDynamicRenderingFeaturesKHR dynamicFeatures = vk::PhysicalDeviceDynamicRenderingFeaturesKHR(1);
-	shaderFeatures.pNext = &dynamicFeatures;
 
-	uint32_t enabled_layer_count = 1;
-	const char** ppEnabledLayers = nullptr;
-	if (true) {
-		enabled_layer_count = 1;
-		ppEnabledLayers = (const char**) malloc(sizeof(const char*));
-		ppEnabledLayers[0] = "VK_LAYER_KHRONOS_validation";
-	}
+	const char* deviceExtensionsList[] = {
+		"VK_KHR_dynamic_rendering",
+		"VK_EXT_shader_object",
+		"VK_KHR_swapchain",
+		//"VK_GOOGLE_surfaceless_query"
+	};
 
-	uint32_t enabledExtensionCount = 3;
-	const char** ppEnabledExtensions = (const char**) malloc(enabledExtensionCount * sizeof(char*));
-	ppEnabledExtensions[0] = "VK_KHR_swapchain";
-	ppEnabledExtensions[1] = "VK_EXT_shader_object";
-	ppEnabledExtensions[2] = "VK_KHR_dynamic_rendering";
+	VkPhysicalDeviceFeatures deviceFeatures = {};
+	deviceFeatures.fillModeNonSolid = VK_TRUE;
 
-	vk::DeviceCreateInfo deviceInfo = vk::DeviceCreateInfo(
-		vk::DeviceCreateFlags(),
-		1, &queueInfo,
-		enabled_layer_count, ppEnabledLayers,
-		enabledExtensionCount, ppEnabledExtensions,
-		&deviceFeatures);
-	deviceInfo.pNext = &shaderFeatures;
+	VkPhysicalDeviceShaderObjectFeaturesEXT deviceShaderObjectFeatures = {};
+	deviceShaderObjectFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT;
+	deviceShaderObjectFeatures.shaderObject = VK_TRUE;
+
+	VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRendering = {};
+	dynamicRendering.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+	dynamicRendering.dynamicRendering = true;
+	dynamicRendering.pNext = &deviceShaderObjectFeatures;
+
+	VkPhysicalDeviceFeatures2 deviceFeatures2 = {};
+	deviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+	deviceFeatures2.features = deviceFeatures;
+	deviceFeatures2.pNext = &dynamicRendering;
+
+	VkDeviceCreateInfo deviceInfo = {};
+	deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	deviceInfo.pQueueCreateInfos = &queueInfo;
+	deviceInfo.queueCreateInfoCount = 1;
+	deviceInfo.ppEnabledExtensionNames = deviceExtensionsList;
+	deviceInfo.enabledExtensionCount = 3;
+	//deviceInfo.pEnabledFeatures = &deviceFeatures;
+	deviceInfo.pEnabledFeatures = NULL;
+	deviceInfo.pNext = &deviceFeatures2;
+
+	VkDevice device = nullptr;
+	auto result = vkCreateDevice(physicalDevice, &deviceInfo, 0, &device);
 	
-	vk::ResultValueType<vk::Device>::type logicalDevice = physicalDevice.createDevice(deviceInfo);
-	vk::Device device = nullptr;
-	if (logicalDevice.result == vk::Result::eSuccess) {
+	if (result == VkResult::VK_SUCCESS) {
 		std::cout << "GPU has been successfully abstracted!" << std::endl;
 
-		deletionQueue.push_back([](vk::Device device) {
-			device.destroy();
+		deletionQueue.push_back([](VkDevice device) {
+			vkDestroyDevice(device, NULL);
 			std::cout << "Deleted logical device" << std::endl;
 		});
-
-		device = logicalDevice.value;
-	}
-	else {
+	}else {
 		std::cout << "Device creation failed!" << std::endl;
 	}
 
-	if (ppEnabledLayers) {
-		free(ppEnabledLayers);
-	}
-	free(ppEnabledExtensions);
+	//if (ppEnabledLayers) {
+		//free(ppEnabledLayers);
+	//}
+//free(ppEnabledExtensions);
 	return device;
 }

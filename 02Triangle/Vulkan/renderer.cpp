@@ -10,49 +10,47 @@ Engine::Engine(void* window, int width, int height)  {
 	std::cout << "Made a graphics engine" << std::endl;
 
 	instance = make_instance("Real Engine", instanceDeletionQueue);
-	dldi = vk::detail::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
+	//dldi = vk::detail::DispatchLoaderDynamic(instance, vkGetInstanceProcAddr);
 	
-	vk::Win32SurfaceCreateInfoKHR surfaceInfo = {};
-	surfaceInfo.sType = vk::StructureType::eWin32SurfaceCreateInfoKHR;
+	VkWin32SurfaceCreateInfoKHR surfaceInfo = {};
+	surfaceInfo.sType = VkStructureType::VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 	surfaceInfo.hwnd = (HWND)window;
 	surfaceInfo.hinstance = GetModuleHandleA(0);
-	instance.createWin32SurfaceKHR(&surfaceInfo, 0, &surface);
+	//instance.createWin32SurfaceKHR(&surfaceInfo, 0, &surface);
 
-	instanceDeletionQueue.push_back([this](vk::Instance instance) {
-		instance.destroySurfaceKHR(surface);
+	vkCreateWin32SurfaceKHR(instance, &surfaceInfo, 0, &surface);
+
+	instanceDeletionQueue.push_back([this](VkInstance instance) {
+		vkDestroySurfaceKHR(instance, surface, NULL);
 	});
 
 	physicalDevice = choose_physical_device(instance);
 
-	logicalDevice = create_logical_device(
-		physicalDevice, surface, deviceDeletionQueue);
-	uint32_t graphicsQueueFamilyIndex = find_queue_family_index(
-		physicalDevice, surface, vk::QueueFlagBits::eGraphics);
-	graphicsQueue = logicalDevice.getQueue(graphicsQueueFamilyIndex, 0);
+	logicalDevice = create_logical_device(physicalDevice, surface, deviceDeletionQueue);
+	uint32_t graphicsQueueFamilyIndex = find_queue_family_index(physicalDevice, surface, VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT);
+	vkGetDeviceQueue(logicalDevice, graphicsQueueFamilyIndex, 0, &graphicsQueue);
 
-	swapchain.build(
-		logicalDevice, physicalDevice, surface, width, height,
-		deviceDeletionQueue);
 
-	std::vector<vk::Image> images =
-		logicalDevice.getSwapchainImagesKHR(swapchain.chain).value;
+	swapchain.build(logicalDevice, physicalDevice, surface, width, height,deviceDeletionQueue);
 
-	for (uint32_t i = 0; i < images.size(); ++i) {
+	//std::vector<VkImage> images = logicalDevice.getSwapchainImagesKHR(swapchain.chain).value;
+	uint32_t scImgCount = 0;
+	vkGetSwapchainImagesKHR(logicalDevice, swapchain.chain, &scImgCount, 0);
+	VkImage* images = new VkImage[scImgCount];
+	vkGetSwapchainImagesKHR(logicalDevice, swapchain.chain, &scImgCount, images);
+
+	for (uint32_t i = 0; i < scImgCount; ++i) {
 		frames.push_back(
 			Frame(images[i], logicalDevice,
 				swapchain.format.format, deviceDeletionQueue));
 	}
 
-	shaders = make_shader_objects(logicalDevice,
-		"_shader", dldi,
-		deviceDeletionQueue);
+	shaders = make_shader_objects(instance, logicalDevice,"_shader", deviceDeletionQueue);
 
-	commandPool = make_command_pool(logicalDevice, graphicsQueueFamilyIndex,
-		deviceDeletionQueue);
+	commandPool = make_command_pool(logicalDevice, graphicsQueueFamilyIndex,deviceDeletionQueue);
 
-	for (uint32_t i = 0; i < images.size(); ++i) {
-		frames[i].set_command_buffer(
-			allocate_command_buffer(logicalDevice, commandPool), shaders, swapchain.extent, dldi);
+	for (uint32_t i = 0; i < scImgCount; ++i) {
+		frames[i].set_command_buffer(instance, allocate_command_buffer(logicalDevice, commandPool), shaders, swapchain.extent);
 	}
 }
 
@@ -60,24 +58,26 @@ void Engine::draw() {
 
 	uint32_t imageIndex{ 0 };
 
-	vk::SubmitInfo submitInfo = {};
-
+	VkSubmitInfo submitInfo = {};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 	submitInfo.commandBufferCount = 1;
 	submitInfo.pCommandBuffers = &frames[0].commandBuffer;
 
-	graphicsQueue.submit(submitInfo);
+	//graphicsQueue.submit(submitInfo);
+	vkQueueSubmit(graphicsQueue, 1, &submitInfo, {});
 
-	graphicsQueue.waitIdle();
+	//graphicsQueue.waitIdle();
+	vkQueueWaitIdle(graphicsQueue);
 
-	vk::PresentInfoKHR presentInfo = {};
-
+	VkPresentInfoKHR presentInfo = {};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 	presentInfo.swapchainCount = 1;
 	presentInfo.pSwapchains = &swapchain.chain;
-
 	presentInfo.pImageIndices = &imageIndex;
 
-	graphicsQueue.presentKHR(presentInfo);
-	graphicsQueue.waitIdle();
+	//graphicsQueue.presentKHR(presentInfo);
+	vkQueuePresentKHR(graphicsQueue, &presentInfo);
+	vkQueueWaitIdle(graphicsQueue);
 }
 
 Engine::~Engine() {

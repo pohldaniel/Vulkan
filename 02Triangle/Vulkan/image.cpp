@@ -1,7 +1,6 @@
 #include "image.h"
 
-vk::ImageView create_image_view(
-    vk::Device logicalDevice, vk::Image image, vk::Format format) {
+VkImageView create_image_view(VkDevice logicalDevice, VkImage image, VkFormat format) {
     
     /*
     * ImageViewCreateInfo( VULKAN_HPP_NAMESPACE::ImageViewCreateFlags flags_ = {},
@@ -18,27 +17,30 @@ vk::ImageView create_image_view(
         , subresourceRange( subresourceRange_ )
     */
 
-    vk::ImageViewCreateInfo createInfo = {};
+	VkImageViewCreateInfo createInfo = {};
     createInfo.image = image;
-    createInfo.viewType = vk::ImageViewType::e2D;
+    createInfo.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
     createInfo.format = format;
-    createInfo.components.r = vk::ComponentSwizzle::eIdentity;
-    createInfo.components.g = vk::ComponentSwizzle::eIdentity;
-    createInfo.components.b = vk::ComponentSwizzle::eIdentity;
-    createInfo.components.a = vk::ComponentSwizzle::eIdentity;
-    createInfo.subresourceRange.aspectMask = vk::ImageAspectFlagBits::eColor;
+    createInfo.components.r = VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.g = VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.b = VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.a = VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.subresourceRange.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
     createInfo.subresourceRange.baseMipLevel = 0;
     createInfo.subresourceRange.levelCount = 1;
     createInfo.subresourceRange.baseArrayLayer = 0;
     createInfo.subresourceRange.layerCount = 1;
 
-    return logicalDevice.createImageView(createInfo).value;
+	VkImageView view;
+	vkCreateImageView(logicalDevice, &createInfo, 0, &view);
+
+    return view;
 }
 
-void transition_image_layout(vk::CommandBuffer commandBuffer, vk::Image image,
-    vk::ImageLayout oldLayout, vk::ImageLayout newLayout,
-	vk::AccessFlags srcAccessMask, vk::AccessFlags dstAccessMask,
-	vk::PipelineStageFlags srcStage, vk::PipelineStageFlags dstStage) {
+void transition_image_layout(VkCommandBuffer commandBuffer, VkImage image,
+	VkImageLayout oldLayout, VkImageLayout newLayout,
+	VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
+	VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage) {
 
 	/*
 	typedef struct VkImageSubresourceRange {
@@ -49,8 +51,8 @@ void transition_image_layout(vk::CommandBuffer commandBuffer, vk::Image image,
 		uint32_t              layerCount;
 	} VkImageSubresourceRange;
 	*/
-	vk::ImageSubresourceRange access;
-	access.aspectMask = vk::ImageAspectFlagBits::eColor;
+	VkImageSubresourceRange access;
+	access.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
 	access.baseMipLevel = 0;
 	access.levelCount = 1;
 	access.baseArrayLayer = 0;
@@ -70,20 +72,25 @@ void transition_image_layout(vk::CommandBuffer commandBuffer, vk::Image image,
 		VkImageSubresourceRange    subresourceRange;
 	} VkImageMemoryBarrier;
 	*/
-	vk::ImageMemoryBarrier barrier;
+	VkImageMemoryBarrier barrier = {};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	barrier.oldLayout = oldLayout;
 	barrier.newLayout = newLayout;
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.image = image;
 	barrier.subresourceRange = access;
+	//barrier.pNext = NULL;
 
-	vk::PipelineStageFlags sourceStage, destinationStage;
+	//vk::PipelineStageFlags sourceStage, destinationStage;
 
 	barrier.srcAccessMask = srcAccessMask;
 	barrier.dstAccessMask = dstAccessMask;
 
-	commandBuffer.pipelineBarrier(
-		srcStage, dstStage, vk::DependencyFlags(), nullptr, nullptr, barrier);
+	//vk::CommandBuffer newCommandBuffer;
+	//newCommandBuffer.pipelineBarrier(
+		//srcStage, dstStage, vk::DependencyFlags(), nullptr, nullptr, barrier);
+
+	vkCmdPipelineBarrier(commandBuffer, srcStage, dstStage, 0, 0, 0, 0, 0, 1, &barrier);
 
 }

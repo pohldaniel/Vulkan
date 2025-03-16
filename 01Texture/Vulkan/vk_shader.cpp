@@ -77,7 +77,7 @@ std::vector<VkShaderEXT> VkShader::make_shader_objects(VkInstance instance, VkDe
 		shaderc_compile_options_set_source_language(info.options, shaderc_source_language_glsl);
 		shaderc_compile_options_set_target_spirv(info.options, shaderc_spirv_version_1_6);
 		shaderc_compile_options_set_optimization_level(info.options, shaderc_optimization_level_zero);
-		shaderc_compile_options_set_suppress_warnings(info.options);
+		//shaderc_compile_options_set_suppress_warnings(info.options);
 		//shaderc_compile_options_set_warnings_as_errors(info.options);
 		//shaderc_compile_options_set_auto_bind_uniforms(info.options, false);
 		//shaderc_compile_options_set_preserve_bindings(info.options, false);

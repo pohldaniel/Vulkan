@@ -1,36 +1,15 @@
-#include "shader.h"
-#include <vector>
-#include <shaderc/shaderc.hpp>
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
-/**
-* @brief Generic bundle for shaderc compilation operations
-*
-*/
+#include <shaderc/shaderc.h>
+#include "shader.h"
+
 struct CompilationInfo {
-    /**
-    * @brief name of the original file, good for getting meaningful debug messages
-    *
-    */
     const char* fileName;
-
-    /**
-    * @brief kind type of shader to ultimately be produced
-    *
-    */
     shaderc_shader_kind kind;
-
-    /**
-    * @brief the source code
-    *
-    */
     std::vector<char> source;
-
-    /**
-    * @brief compilation options
-    */
-    shaderc::CompileOptions options;
+    shaderc_compile_options_t options;
 };
 
 /**
@@ -39,19 +18,16 @@ struct CompilationInfo {
 */
 void preprocess_shader(CompilationInfo& info) {
 
-    //setup
-    shaderc::Compiler compiler;
+    shaderc_compiler_t compiler = shaderc_compiler_initialize();
+    shaderc_compilation_result_t result = shaderc_compile_into_preprocessed_text(compiler, info.source.data(), info.source.size(), info.kind, info.fileName, "main", info.options);
 
-    //compile
-    shaderc::PreprocessedSourceCompilationResult result =
-        compiler.PreprocessGlsl(info.source.data(), info.source.size(), info.kind, info.fileName, info.options);
-    if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-        std::cout << result.GetErrorMessage() << std::endl;
+    if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
+        std::cout << "Error: preprocess" << std::endl;
     }
 
     //copy result into info for next compilation operation
-    const char* src = result.cbegin();
-    size_t newSize = result.cend() - src;
+    const char* src = reinterpret_cast<const char*>(shaderc_result_get_bytes(result));
+    size_t newSize = reinterpret_cast<const char*>(shaderc_result_get_bytes(result)) + shaderc_result_get_length(result) / sizeof(char) - src;
     info.source.resize(newSize);
     memcpy(info.source.data(), src, newSize);
 
@@ -61,25 +37,16 @@ void preprocess_shader(CompilationInfo& info) {
     std::cout << output << std::endl;
 }
 
-/**
-* @brief Compile glsl source code to SPIR - V assembly.
-* 
-*/ 
 void compile_file_to_assembly(CompilationInfo& info) {
-
-    //setup
-    shaderc::Compiler compiler;
-
-    //compile
-    shaderc::AssemblyCompilationResult result = compiler.CompileGlslToSpvAssembly(
-        info.source.data(), info.source.size(), info.kind, info.fileName, info.options);
-    if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-        std::cout << result.GetErrorMessage() << std::endl;
+    shaderc_compiler_t compiler = shaderc_compiler_initialize();
+    shaderc_compilation_result_t result = shaderc_compile_into_spv_assembly(compiler, info.source.data(), info.source.size(), info.kind, info.fileName, "main", info.options);
+    if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
+        std::cout << "Error: toSpvAssembly" << std::endl;
     }
 
     //copy result into info for next compilation operation
-    const char* src = result.cbegin();
-    size_t newSize = result.cend() - src;
+    const char* src = reinterpret_cast<const char*>(shaderc_result_get_bytes(result));
+    size_t newSize = reinterpret_cast<const char*>(shaderc_result_get_bytes(result)) + shaderc_result_get_length(result) / sizeof(char) - src;
     info.source.resize(newSize);
     memcpy(info.source.data(), src, newSize);
 
@@ -97,21 +64,17 @@ void compile_file_to_assembly(CompilationInfo& info) {
 */
 std::vector<uint32_t> compile_file(CompilationInfo& info) {
 
-    //setup  
-    shaderc::Compiler compiler;
-
-    //compile
-    shaderc::SpvCompilationResult module = compiler.AssembleToSpv(info.source.data(), info.source.size(), info.options);
-    if (module.GetCompilationStatus() != shaderc_compilation_status_success) {
-        std::cout << "---- Assembly to Binary Compilation ----" << std::endl;
-        std::cout << module.GetErrorMessage() << std::endl;
+    shaderc_compiler_t compiler = shaderc_compiler_initialize();
+    shaderc_compilation_result_t result = shaderc_assemble_into_spv(compiler, info.source.data(), info.source.size(), info.options);
+    if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status::shaderc_compilation_status_success) {
+        std::cout << "Error: compile" << std::endl;
     }
 
     //copy result to the final output
-    const uint32_t* src = module.cbegin();
-    size_t wordCount = module.cend() - src;
+    const uint32_t* src = reinterpret_cast<const uint32_t*>(shaderc_result_get_bytes(result));
+    size_t wordCount = shaderc_result_get_length(result) / sizeof(uint32_t);
     std::vector<uint32_t> output(wordCount);
-    memcpy(output.data(), src, wordCount * sizeof(uint32_t));
+    memcpy(output.data(), src, shaderc_result_get_length(result));
 
     //Log output for fun
     std::cout << "---- SPIR-V Binary Code ----" << std::endl;
@@ -123,9 +86,7 @@ std::vector<uint32_t> compile_file(CompilationInfo& info) {
     return output;
 }
 
-std::vector<vk::ShaderEXT> make_shader_objects(vk::Device logicalDevice, 
-    const char* name, vk::detail::DispatchLoaderDynamic& dl,
-    std::deque<std::function<void(vk::Device)>>& deviceDeletionQueue) {
+std::vector<VkShaderEXT> make_shader_objects(VkInstance instance, VkDevice logicalDevice, const char* name, std::deque<std::function<void(VkDevice)>>& deviceDeletionQueue) {
 
     std::stringstream filenameBuilder;
     std::string filename;
@@ -147,8 +108,8 @@ std::vector<vk::ShaderEXT> make_shader_objects(vk::Device logicalDevice,
         const void * pNext_            = nullptr)
     */
 
-    vk::ShaderCreateFlagsEXT flags = vk::ShaderCreateFlagBitsEXT::eLinkStage;
-    vk::ShaderStageFlags nextStage = vk::ShaderStageFlagBits::eFragment;
+    VkShaderCreateFlagsEXT flags = VkShaderCreateFlagBitsEXT::VK_SHADER_CREATE_LINK_STAGE_BIT_EXT;
+    VkShaderStageFlags nextStage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
 
     filenameBuilder << "res/shader/" << name << ".vert";
     filename = filenameBuilder.str();
@@ -157,26 +118,29 @@ std::vector<vk::ShaderEXT> make_shader_objects(vk::Device logicalDevice,
     info.fileName = filename.c_str();
     info.kind = shaderc_vertex_shader;
     info.source = read_file(info.fileName);
-    info.options.SetTargetEnvironment(shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
-    info.options.SetTargetEnvironment(shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_3);
-    info.options.SetSourceLanguage(shaderc_source_language_glsl);
-    info.options.SetTargetSpirv(shaderc_spirv_version_1_6);
-    info.options.SetOptimizationLevel(shaderc_optimization_level_performance);
+    info.options = shaderc_compile_options_initialize();
+    shaderc_compile_options_set_target_env(info.options, shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
+    shaderc_compile_options_set_target_env(info.options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
+    shaderc_compile_options_set_source_language(info.options, shaderc_source_language_glsl);
+    shaderc_compile_options_set_target_spirv(info.options, shaderc_spirv_version_1_6);
+    shaderc_compile_options_set_optimization_level(info.options, shaderc_optimization_level_zero);
+
     preprocess_shader(info);
     compile_file_to_assembly(info);
     std::vector<uint32_t> vertexCode = compile_file(info);
 
-    vk::ShaderCodeTypeEXT codeType = vk::ShaderCodeTypeEXT::eSpirv;
+    VkShaderCodeTypeEXT codeType = VkShaderCodeTypeEXT::VK_SHADER_CODE_TYPE_SPIRV_EXT;
     const char* pName = "main";
 
-    vk::ShaderCreateInfoEXT vertexInfo = {};
-    vertexInfo.setFlags(flags);
-    vertexInfo.setStage(vk::ShaderStageFlagBits::eVertex);
-    vertexInfo.setNextStage(nextStage);
-    vertexInfo.setCodeType(codeType);
-    vertexInfo.setCodeSize(sizeof(uint32_t) * vertexCode.size());
-    vertexInfo.setPCode(vertexCode.data());
-    vertexInfo.setPName(pName);
+    VkShaderCreateInfoEXT vertexInfo = {};
+    vertexInfo.sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
+    vertexInfo.flags = flags;
+    vertexInfo.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+    vertexInfo.nextStage = nextStage;
+    vertexInfo.codeType = codeType;
+    vertexInfo.codeSize = sizeof(uint32_t) * vertexCode.size();
+    vertexInfo.pCode = vertexCode.data();
+    vertexInfo.pName = pName;
 
     filenameBuilder << "res/shader/" << name << ".frag";
     filename = filenameBuilder.str();
@@ -188,13 +152,14 @@ std::vector<vk::ShaderEXT> make_shader_objects(vk::Device logicalDevice,
     compile_file_to_assembly(info);
     std::vector<uint32_t> fragmentCode = compile_file(info);
 
-    vk::ShaderCreateInfoEXT fragmentInfo = {};
-    fragmentInfo.setFlags(flags);
-    fragmentInfo.setStage(vk::ShaderStageFlagBits::eFragment);
-    fragmentInfo.setCodeType(codeType);
-    fragmentInfo.setCodeSize(sizeof(uint32_t) * fragmentCode.size());
-    fragmentInfo.setPCode(fragmentCode.data());
-    fragmentInfo.setPName(pName);
+    VkShaderCreateInfoEXT fragmentInfo = {};
+    fragmentInfo.sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
+    fragmentInfo.flags = flags;
+    fragmentInfo.stage = VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+    fragmentInfo.codeType = codeType;
+    fragmentInfo.codeSize = sizeof(uint32_t) * fragmentCode.size();
+    fragmentInfo.pCode = fragmentCode.data();
+    fragmentInfo.pName = pName;
 
     /*
         VKAPI_ATTR VkResult VKAPI_CALL vkCreateShadersEXT(
@@ -204,26 +169,27 @@ std::vector<vk::ShaderEXT> make_shader_objects(vk::Device logicalDevice,
             const VkAllocationCallbacks* pAllocator,
             VkShaderEXT*                 pShaders);
     */
-    std::vector<vk::ShaderCreateInfoEXT> shaderInfo;
+    std::vector<VkShaderCreateInfoEXT> shaderInfo;
     shaderInfo.push_back(vertexInfo);
     shaderInfo.push_back(fragmentInfo);
 
-    auto result = logicalDevice.createShadersEXT(shaderInfo, nullptr, dl);
-    std::vector<vk::ShaderEXT> shaders;
+    std::vector <VkShaderEXT> shaders;
+    shaders.resize(2);
+
+	auto vkCreateShadersEXT = (PFN_vkCreateShadersEXT)vkGetInstanceProcAddr(instance, "vkCreateShadersEXT");
+	VkResult result = vkCreateShadersEXT(logicalDevice, 2, shaderInfo.data(), nullptr, shaders.data());
     
-    if (result.result == vk::Result::eSuccess) {
+    if (result == VkResult::VK_SUCCESS) {
         std::cout << "Successfully made shaders" << std::endl;
-        shaders = result.value;
         VkShaderEXT vertexShader = shaders[0];
-        deviceDeletionQueue.push_back([vertexShader, dl](vk::Device device) {
-            device.destroyShaderEXT(vertexShader, nullptr, dl);
-        });
+        //deviceDeletionQueue.push_back([vertexShader](VkDevice device) {
+        //	vkDestroyShaderEXT(device, vertexShader, nullptr);
+        //});
         VkShaderEXT fragmentShader = shaders[1];
-        deviceDeletionQueue.push_back([fragmentShader, dl](vk::Device device) {
-            device.destroyShaderEXT(fragmentShader, nullptr, dl);
-        });
-    }
-    else {
+        //deviceDeletionQueue.push_back([fragmentShader](VkDevice device) {
+        //	vkDestroyShaderEXT(device, fragmentShader, nullptr);
+        //});
+    }else {
         std::cout << "Shader creation failed" << std::endl;
     }
     return shaders;

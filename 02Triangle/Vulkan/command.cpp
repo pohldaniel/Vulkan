@@ -1,34 +1,36 @@
 #include "command.h"
 
-vk::CommandPool make_command_pool(vk::Device logicalDevice, uint32_t queueFamilyIndex,
-	std::deque<std::function<void(vk::Device)>>& deletionQueue) {
+VkCommandPool make_command_pool(VkDevice logicalDevice, uint32_t queueFamilyIndex,
+	std::deque<std::function<void(VkDevice)>>& deletionQueue) {
 
-	vk::CommandPoolCreateInfo poolInfo = {};
-	poolInfo.setFlags(vk::CommandPoolCreateFlags()
-		| vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
-	poolInfo.setQueueFamilyIndex(queueFamilyIndex);
+	VkCommandPoolCreateInfo poolInfo = {};
+	poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+	poolInfo.flags  = VkCommandPoolCreateFlags() | VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+	poolInfo.queueFamilyIndex = queueFamilyIndex;
 
-	vk::CommandPool pool = nullptr;
+	VkCommandPool pool = nullptr;
 
-	auto result = logicalDevice.createCommandPool(poolInfo);
-	if (result.result == vk::Result::eSuccess) {
+	auto result = vkCreateCommandPool(logicalDevice, &poolInfo, 0, &pool);
+	if (result == VkResult::VK_SUCCESS) {
 		std::cout << "Command pool created successfully" << std::endl;
-		pool = result.value;
-		deletionQueue.push_back([pool](vk::Device device) {
-			device.destroyCommandPool(pool);
+
+		deletionQueue.push_back([pool](VkDevice device) {
+			vkDestroyCommandPool(device, pool, NULL);
 			std::cout << "Destroyed command pool!" << std::endl;
-			});
-	}
-	else {
+		});
+	}else {
 		std::cout << "Command pool creation failed" << std::endl;
 	}
 	return pool;
 }
 
-vk::CommandBuffer allocate_command_buffer(vk::Device logicalDevice, vk::CommandPool commandPool) {
-	vk::CommandBufferAllocateInfo allocInfo = {};
-	allocInfo.setCommandBufferCount(1);
-	allocInfo.setCommandPool(commandPool);
-	allocInfo.setLevel(vk::CommandBufferLevel::ePrimary);
-	return logicalDevice.allocateCommandBuffers(allocInfo).value[0];
+VkCommandBuffer allocate_command_buffer(VkDevice logicalDevice, VkCommandPool commandPool) {
+	VkCommandBufferAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.commandBufferCount = 1;
+	allocInfo.commandPool = commandPool;
+	allocInfo.level = VkCommandBufferLevel::VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+	VkCommandBuffer buffer;
+	vkAllocateCommandBuffers(logicalDevice, &allocInfo, &buffer);
+	return buffer;
 }

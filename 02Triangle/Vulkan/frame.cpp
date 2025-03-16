@@ -1,58 +1,76 @@
 #include "frame.h"
 #include "image.h"
 
-Frame::Frame(vk::Image image, vk::Device logicalDevice,
-    vk::Format swapchainFormat,
-    std::deque<std::function<void(vk::Device)>>& deletionQueue): image(image) {
+Frame::Frame(VkImage image, VkDevice logicalDevice, VkFormat swapchainFormat, std::deque<std::function<void(VkDevice)>>& deletionQueue) : 
+	image(image), 
+	commandBuffer(nullptr),
+	imageView(nullptr){
     
-    imageView = create_image_view(
-        logicalDevice, image, swapchainFormat);
-    VkImageView imageViewHandle = imageView;
-    deletionQueue.push_back([imageViewHandle](vk::Device device) {
-        vkDestroyImageView(device, imageViewHandle, nullptr);
+    //imageView = create_image_view(logicalDevice, image, swapchainFormat);
+
+	VkImageViewCreateInfo createInfo = {};
+	createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	createInfo.image = image;
+	createInfo.viewType = VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
+	createInfo.format = swapchainFormat;
+	createInfo.components.r = VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.g = VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.b = VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.components.a = VkComponentSwizzle::VK_COMPONENT_SWIZZLE_IDENTITY;
+	createInfo.subresourceRange.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+	createInfo.subresourceRange.baseMipLevel = 0;
+	createInfo.subresourceRange.levelCount = 1;
+	createInfo.subresourceRange.baseArrayLayer = 0;
+	createInfo.subresourceRange.layerCount = 1;
+
+	vkCreateImageView(logicalDevice, &createInfo, NULL, &imageView);
+    deletionQueue.push_back([this](VkDevice device) {
+        vkDestroyImageView(device, imageView, nullptr);
     });
 }
 
-void Frame::set_command_buffer(vk::CommandBuffer newCommandBuffer, 
-	std::vector<vk::ShaderEXT>& shaders, vk::Extent2D frameSize, 
-	vk::detail::DispatchLoaderDynamic& dl) {
+void Frame::set_command_buffer(VkInstance instance, VkCommandBuffer newCommandBuffer, std::vector<VkShaderEXT>& shaders, VkExtent2D frameSize) {
+	auto vkCmdBindShadersEXT = (PFN_vkCmdBindShadersEXT)vkGetInstanceProcAddr(instance, "vkCmdBindShadersEXT");
+	auto vkCmdBeginRenderingKHR = (PFN_vkCmdBeginRenderingKHR)vkGetInstanceProcAddr(instance, "vkCmdBeginRenderingKHR");
+	auto vkCmdEndRenderingKHR = (PFN_vkCmdEndRenderingKHR)vkGetInstanceProcAddr(instance, "vkCmdEndRenderingKHR");
 
 	commandBuffer = newCommandBuffer;
 
 	build_color_attachment();
 	build_rendering_info(frameSize);
-
-	vk::CommandBufferBeginInfo beginInfo = {};
-	commandBuffer.begin(beginInfo);
+	 
+	VkCommandBufferBeginInfo beginInfo = {};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
 	transition_image_layout(commandBuffer, image,
-		vk::ImageLayout::eUndefined, vk::ImageLayout::eAttachmentOptimal,
-		vk::AccessFlagBits::eNone, vk::AccessFlagBits::eColorAttachmentWrite,
-		vk::PipelineStageFlagBits::eTopOfPipe, vk::PipelineStageFlagBits::eFragmentShader);
+		VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED, VkImageLayout::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+		VkAccessFlagBits::VK_ACCESS_NONE, VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+		VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-	annoying_boilerplate_that_dynamic_rendering_was_meant_to_spare_us(
-		frameSize, dl);
+	annoying_boilerplate_that_dynamic_rendering_was_meant_to_spare_us(instance, frameSize);
 
-	commandBuffer.beginRenderingKHR(renderingInfo, dl);
+	vkCmdBeginRenderingKHR(commandBuffer, &renderingInfo);
 
-	vk::ShaderStageFlagBits stages[2] = {
-		vk::ShaderStageFlagBits::eVertex,
-		vk::ShaderStageFlagBits::eFragment
+	VkShaderStageFlagBits stages[2] = {
+		VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT,
+		VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT
 	};
-	commandBuffer.bindShadersEXT(stages, shaders, dl);
+	vkCmdBindShadersEXT(commandBuffer, 2, stages, shaders.data());
+	vkCmdDraw(commandBuffer, 3, 1, 0, 0);
 
-	commandBuffer.draw(3, 1, 0, 0);
+	vkCmdEndRenderingKHR(commandBuffer);
 
-	commandBuffer.endRenderingKHR(dl);
 
 	transition_image_layout(commandBuffer, image,
-		vk::ImageLayout::eAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR,
-		vk::AccessFlagBits::eColorAttachmentWrite, vk::AccessFlagBits::eNone,
-		vk::PipelineStageFlagBits::eFragmentShader, vk::PipelineStageFlagBits::eBottomOfPipe);
+		VkImageLayout::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL, VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+		VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VkAccessFlagBits::VK_ACCESS_NONE,
+		VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VkPipelineStageFlagBits::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
 
-	commandBuffer.end();
+	vkEndCommandBuffer(commandBuffer);
+	
 }
 
-void Frame::build_rendering_info(vk::Extent2D frameSize) {
+void Frame::build_rendering_info(VkExtent2D frameSize) {
 
 	/*
 	* // Provided by VK_VERSION_1_3
@@ -70,13 +88,18 @@ void Frame::build_rendering_info(vk::Extent2D frameSize) {
 		} VkRenderingInfo;
 	*/
 
-	renderingInfo.setFlags(vk::RenderingFlagsKHR());
-	renderingInfo.setRenderArea(vk::Rect2D({ 0,0 }, frameSize));
-	renderingInfo.setLayerCount(1);
+	VkRect2D rect;
+	rect.offset = { 0,0 };
+	rect.extent = frameSize;
+
+	renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+	renderingInfo.flags = VkRenderingFlagsKHR();
+	renderingInfo.renderArea = rect;
+	renderingInfo.layerCount = 1;
 	//bitmask indicating the layers which will be rendered to
-	renderingInfo.setViewMask(0);
-	renderingInfo.setColorAttachmentCount(1);
-	renderingInfo.setColorAttachments(colorAttachment);
+	renderingInfo.viewMask = 0;
+	renderingInfo.colorAttachmentCount = 1;
+	renderingInfo.pColorAttachments = &colorAttachment;
 }
 
 void Frame::build_color_attachment() {
@@ -95,47 +118,99 @@ void Frame::build_color_attachment() {
 		VkClearValue             clearValue;
 	} VkRenderingAttachmentInfo;
 	*/
-
-	colorAttachment.setImageView(imageView);
-	colorAttachment.setImageLayout(vk::ImageLayout::eAttachmentOptimal);
-	colorAttachment.setLoadOp(vk::AttachmentLoadOp::eClear);
-	colorAttachment.setStoreOp(vk::AttachmentStoreOp::eStore);
-	colorAttachment.setClearValue(vk::ClearValue({ 0.5f, 0.0f, 0.25f, 1.0f }));
+	colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+	colorAttachment.imageView = imageView;
+	colorAttachment.imageLayout = VkImageLayout::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+	colorAttachment.loadOp = VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+	colorAttachment.storeOp = VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
+	colorAttachment.clearValue = VkClearValue({ 0.5f, 0.0f, 0.25f, 1.0f });
 }
 
-void Frame::annoying_boilerplate_that_dynamic_rendering_was_meant_to_spare_us(
-	vk::Extent2D frameSize, vk::detail::DispatchLoaderDynamic& dl) {
+void Frame::annoying_boilerplate_that_dynamic_rendering_was_meant_to_spare_us(VkInstance instance, VkExtent2D frameSize) {
+	auto vkCmdSetColorBlendEnableEXT = (PFN_vkCmdSetColorBlendEnableEXT)vkGetInstanceProcAddr(instance, "vkCmdSetColorBlendEnableEXT");
+	auto vkCmdSetSampleMaskEXT = (PFN_vkCmdSetSampleMaskEXT)vkGetInstanceProcAddr(instance, "vkCmdSetSampleMaskEXT");
+	auto vkCmdSetPolygonModeEXT = (PFN_vkCmdSetPolygonModeEXT)vkGetInstanceProcAddr(instance, "vkCmdSetPolygonModeEXT");
+	auto vkCmdSetColorBlendEquationEXT = (PFN_vkCmdSetColorBlendEquationEXT)vkGetInstanceProcAddr(instance, "vkCmdSetColorBlendEquationEXT");
+	auto vkCmdSetRasterizationSamplesEXT = (PFN_vkCmdSetRasterizationSamplesEXT)vkGetInstanceProcAddr(instance, "vkCmdSetRasterizationSamplesEXT");
+	auto vkCmdSetAlphaToCoverageEnableEXT = (PFN_vkCmdSetAlphaToCoverageEnableEXT)vkGetInstanceProcAddr(instance, "vkCmdSetAlphaToCoverageEnableEXT");
+	auto vkCmdSetColorWriteMaskEXT = (PFN_vkCmdSetColorWriteMaskEXT)vkGetInstanceProcAddr(instance, "vkCmdSetColorWriteMaskEXT");
 
-	vk::Viewport viewport = 
-		vk::Viewport(0.0f, 0.0f, frameSize.width, frameSize.height, 0.0f, 1.0f);
-	commandBuffer.setViewportWithCount(viewport, dl);
+	VkViewport viewport;
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = frameSize.width;
+	viewport.height = frameSize.height;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
 
-	vk::Rect2D scissor = vk::Rect2D({ 0,0 }, frameSize);
-	commandBuffer.setScissorWithCount(scissor, dl);
+	vkCmdSetViewportWithCount(commandBuffer,1, &viewport);
+	VkRect2D scissor;
+	scissor.offset = { 0,0 };
+	scissor.extent = frameSize;
 
-	commandBuffer.setRasterizerDiscardEnable(0, dl);
-	commandBuffer.setPolygonModeEXT(vk::PolygonMode::eFill, dl);
-	commandBuffer.setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1, dl);
+	//vk::CommandBuffer newCommandBuffer;
+	//newCommandBuffer.setScissorWithCount(scissor, dl);
+	vkCmdSetScissorWithCount(commandBuffer, 1, &scissor);
+
+	//newCommandBuffer.setRasterizerDiscardEnable(0, dl);
+	vkCmdSetRasterizerDiscardEnable(commandBuffer, 0);
+
+	//newCommandBuffer.setPolygonModeEXT(vk::PolygonMode::eFill, dl);
+	vkCmdSetPolygonModeEXT(commandBuffer, VkPolygonMode::VK_POLYGON_MODE_FILL);
+
+	//newCommandBuffer.setRasterizationSamplesEXT(vk::SampleCountFlagBits::e1, dl);
+	vkCmdSetRasterizationSamplesEXT(commandBuffer, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT);
+
+
 	uint32_t sampleMask = 1;
-	commandBuffer.setSampleMaskEXT(vk::SampleCountFlagBits::e1, sampleMask, dl);
-	commandBuffer.setAlphaToCoverageEnableEXT(0, dl);
-	commandBuffer.setCullMode(vk::CullModeFlagBits::eNone, dl);
-	commandBuffer.setDepthTestEnable(0, dl);
-	commandBuffer.setDepthWriteEnable(0, dl);
-	commandBuffer.setDepthBiasEnable(0, dl);
-	commandBuffer.setStencilTestEnable(0, dl);
-	commandBuffer.setPrimitiveTopology(vk::PrimitiveTopology::eTriangleList, dl);
-	commandBuffer.setPrimitiveRestartEnable(0, dl);
+	//newCommandBuffer.setSampleMaskEXT(vk::SampleCountFlagBits::e1, sampleMask, dl);
+	vkCmdSetSampleMaskEXT(commandBuffer, VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT, &sampleMask);
+
+	//newCommandBuffer.setAlphaToCoverageEnableEXT(0, dl);
+	vkCmdSetAlphaToCoverageEnableEXT(commandBuffer, 0);
+
+	//newCommandBuffer.setCullMode(vk::CullModeFlagBits::eNone, dl);
+	vkCmdSetCullMode(commandBuffer, VkCullModeFlagBits::VK_CULL_MODE_NONE);
+
+	//newCommandBuffer.setDepthTestEnable(0, dl);
+	vkCmdSetDepthTestEnable(commandBuffer, 0);
+
+
+	//newCommandBuffer.setDepthWriteEnable(0, dl);
+	vkCmdSetDepthWriteEnable(commandBuffer, 0);
+
+
+	//newCommandBuffer.setDepthBiasEnable(0, dl);
+	vkCmdSetDepthBiasEnable(commandBuffer, 0);
+
+	//newCommandBuffer.setStencilTestEnable(0, dl);
+	vkCmdSetStencilTestEnable(commandBuffer, 0);
+
+	//newCommandBuffer.setPrimitiveTopology(vk::PrimitiveTopology::eTriangleList, dl);
+	vkCmdSetPrimitiveTopology(commandBuffer, VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+
+
+	//newCommandBuffer.setPrimitiveRestartEnable(0, dl);
+	vkCmdSetPrimitiveRestartEnable(commandBuffer, 0);
+
 	uint32_t colorBlendEnable = 0;
-	commandBuffer.setColorBlendEnableEXT(0, colorBlendEnable, dl);
-	vk::ColorBlendEquationEXT equation;
-	equation.colorBlendOp = vk::BlendOp::eAdd;
-	equation.dstColorBlendFactor = vk::BlendFactor::eZero;
-	equation.srcColorBlendFactor = vk::BlendFactor::eOne;
-	commandBuffer.setColorBlendEquationEXT(0, equation, dl);
-	vk::ColorComponentFlags colorWriteMask = vk::ColorComponentFlagBits::eR
-		| vk::ColorComponentFlagBits::eG
-		| vk::ColorComponentFlagBits::eB
-		| vk::ColorComponentFlagBits::eA;
-	commandBuffer.setColorWriteMaskEXT(0, colorWriteMask, dl);
+	//newCommandBuffer.setColorBlendEnableEXT(0, colorBlendEnable, dl);
+	vkCmdSetColorBlendEnableEXT(commandBuffer, 0, 1, &colorBlendEnable);
+
+
+	VkColorBlendEquationEXT equation;
+	equation.colorBlendOp = VkBlendOp::VK_BLEND_OP_ADD;
+	equation.dstColorBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ZERO;
+	equation.srcColorBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ONE;
+	equation.dstAlphaBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ZERO;
+	equation.srcAlphaBlendFactor = VkBlendFactor::VK_BLEND_FACTOR_ONE;
+	//newCommandBuffer.setColorBlendEquationEXT(0, equation, dl);
+	vkCmdSetColorBlendEquationEXT(commandBuffer, 0, 1, &equation);
+
+	VkColorComponentFlags colorWriteMask = VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT
+		| VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT
+		| VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT
+		| VkColorComponentFlagBits::VK_COLOR_COMPONENT_A_BIT;
+	//newCommandBuffer.setColorWriteMaskEXT(0, colorWriteMask, dl);
+	vkCmdSetColorWriteMaskEXT(commandBuffer, 0, 1, &colorWriteMask);
 }

@@ -27,7 +27,6 @@ void Default::update() {
 }
 
 void Default::render() {
-	//vk_render(&Application::vkContext);
 	Application::engine->draw();
 }
 
