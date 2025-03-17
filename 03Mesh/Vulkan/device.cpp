@@ -108,6 +108,8 @@ VkDevice create_logical_device(VkPhysicalDevice physicalDevice, VkSurfaceKHR sur
 
 	VkPhysicalDeviceFeatures deviceFeatures = {};
 	deviceFeatures.fillModeNonSolid = VK_TRUE;
+	deviceFeatures.shaderUniformBufferArrayDynamicIndexing = VK_TRUE;
+	deviceFeatures.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
 
 	
 	VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRendering = {};
@@ -129,6 +131,12 @@ VkDevice create_logical_device(VkPhysicalDevice physicalDevice, VkSurfaceKHR sur
 	deviceSynchronization2Features.synchronization2 = VK_TRUE;
 	deviceSynchronization2Features.pNext = &deviceShaderObjectFeatures;
 
+	VkPhysicalDeviceDescriptorIndexingFeaturesEXT indexingFeatures = {};
+	indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+	indexingFeatures.pNext = &deviceSynchronization2Features;
+	indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+	indexingFeatures.runtimeDescriptorArray = VK_TRUE;
+
 	VkDeviceCreateInfo deviceInfo = {};
 	deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceInfo.pQueueCreateInfos = &queueInfo;
@@ -137,7 +145,7 @@ VkDevice create_logical_device(VkPhysicalDevice physicalDevice, VkSurfaceKHR sur
 	deviceInfo.enabledExtensionCount = ArraySize(deviceExtensionsList);
 	//deviceInfo.pEnabledFeatures = &deviceFeatures;
 	deviceInfo.pEnabledFeatures = NULL;
-	deviceInfo.pNext = &deviceSynchronization2Features;
+	deviceInfo.pNext = &indexingFeatures;
 
 	VkDevice device = nullptr;
 	auto result = vkCreateDevice(physicalDevice, &deviceInfo, 0, &device);

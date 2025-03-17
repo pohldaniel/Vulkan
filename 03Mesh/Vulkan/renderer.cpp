@@ -1,12 +1,65 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
-
+#include <fstream>
 #include <windows.h>
 #include "renderer.h"
 #include "device.h"
-
+#include "swap_chain.h"
 #include "shader.h"
 #include "command.h"
+
+static const int maxDescriptorSets = 10;
+static const int maxDescriptorCount = 65536;
+static const int pushConstantRangeSize = 128;
+
+static std::string getFile(const std::string& path)
+{
+    std::ifstream file(path);
+
+    if (!file.good())
+    {
+        std::cerr << "Failed to read file: " << path << std::endl;
+        return "";
+    }
+
+    return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+}
+
+static char* platform_read_file(const char* path, uint32_t* length) {
+    char* result = 0;
+
+    // This opens the file
+    HANDLE file = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
+
+    if (file != INVALID_HANDLE_VALUE) {
+        LARGE_INTEGER size;
+        if (GetFileSizeEx(file, &size)) {
+            *length = size.QuadPart;
+            //TODO: Suballocte from main allocation
+            result = new char[*length];
+
+            DWORD bytesRead;
+            if (ReadFile(file, result, *length, &bytesRead, 0) && bytesRead == *length) {
+                // TODO: What to do here?
+                // Success
+            }
+            else {
+                //TODO: Assert and error checking
+                std::cout << "Failed to read file" << std::endl;
+            }
+        }
+        else {
+            //TODO: Assert and error checking
+            std::cout << "Failed to get file size" << std::endl;
+        }
+    }
+    else {
+        // TODO: Asserts, get error code
+        std::cout << "Failed to open the file" << std::endl;
+    }
+
+    return result;
+}
 
 Engine::Engine(void* window, int width, int height)  {
 
@@ -41,12 +94,12 @@ Engine::Engine(void* window, int width, int height)  {
 		frames.push_back(Frame(images[i], logicalDevice, swapchain.format.format, deviceDeletionQueue));
 	}
 
-	shaders = make_shader_objects(instance, logicalDevice,"_shader", deviceDeletionQueue);
-
+    _shaders = make_shader_objects(instance, logicalDevice,"_shader", deviceDeletionQueue);
+  
 	commandPool = make_command_pool(logicalDevice, graphicsQueueFamilyIndex,deviceDeletionQueue);
 
 	for (uint32_t i = 0; i < scImgCount; ++i) {
-		frames[i].set_command_buffer(instance, allocate_command_buffer(logicalDevice, commandPool), shaders, swapchain.extent);
+		frames[i].set_command_buffer(instance, allocate_command_buffer(logicalDevice, commandPool), _shaders, swapchain.extent);
 	}
 
 	VkSemaphoreCreateInfo semaphoreInfo = {};
@@ -57,11 +110,28 @@ Engine::Engine(void* window, int width, int height)  {
     createAllocator();
     createMesh();
     createTexture();
+    createDescriptorPool();
+    createDescriptorSetLayout();
+    createPushConstantRange();
+    createPipelineLayout();
+    createSampler();
+    createShaders();
+    createTextureView();
+    //meshShaders = make_shader_objects(instance, logicalDevice, "mesh", deviceDeletionQueue);
+
+    swapchain2 = new Swapchain2(this, width, height);
 }
 
 void Engine::draw() {
 
-	vkAcquireNextImageKHR(logicalDevice, swapchain.chain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    bool shouldResize = swapchain2->draw();
+
+    if (shouldResize)
+    {
+        resize();
+    }
+
+	/*vkAcquireNextImageKHR(logicalDevice, swapchain.chain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 
 	VkSubmitInfo submitInfo = {};
 	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -85,7 +155,17 @@ void Engine::draw() {
 	presentInfo.pWaitSemaphores = &renderFinishedSemaphore;
 
 	vkQueuePresentKHR(graphicsQueue, &presentInfo);
-	vkQueueWaitIdle(graphicsQueue);
+	vkQueueWaitIdle(graphicsQueue);*/
+}
+
+void Engine::resize()
+{
+    /*VkResult result;
+
+    vkDeviceWaitIdle(logicalDevice);
+
+    delete swapchain2;
+    swapchain2 = new Swapchain2(this, width, height);*/
 }
 
 Engine::~Engine() {
@@ -216,4 +296,155 @@ void Engine::createTexture() {
     }
 
     vmaUnmapMemory(memoryAllocator, texture.allocation);
+}
+
+void Engine::createDescriptorPool() {
+    VkResult result;
+
+    VkDescriptorPoolSize poolSizes[] = {
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxDescriptorSets * maxDescriptorCount },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, maxDescriptorSets * maxDescriptorCount }
+    };
+
+    VkDescriptorPoolCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    createInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    createInfo.maxSets = maxDescriptorSets;
+    createInfo.poolSizeCount = sizeof(poolSizes) / sizeof(VkDescriptorPoolSize);
+    createInfo.pPoolSizes = poolSizes;
+
+    vkCreateDescriptorPool(logicalDevice, &createInfo, nullptr, &descriptorPool);
+}
+
+void Engine::createDescriptorSetLayout(){
+    VkResult result;
+
+    VkDescriptorSetLayoutBinding bindings[2]{};
+    bindings[0].binding = 0;
+    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bindings[0].descriptorCount = maxDescriptorCount;
+    bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    bindings[1].binding = 1;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[1].descriptorCount = maxDescriptorCount;
+    bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorBindingFlags bindingFlags[] = {
+        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
+    };
+
+    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo{};
+    bindingFlagsCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+    bindingFlagsCreateInfo.pBindingFlags = bindingFlags;
+    bindingFlagsCreateInfo.bindingCount = sizeof(bindingFlags) / sizeof(VkDescriptorBindingFlags);
+
+    VkDescriptorSetLayoutCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    createInfo.pNext = &bindingFlagsCreateInfo;
+    createInfo.bindingCount = sizeof(bindings) / sizeof(VkDescriptorSetLayoutBinding);
+    createInfo.pBindings = bindings;
+
+    vkCreateDescriptorSetLayout(logicalDevice, &createInfo, nullptr, &descriptorSetLayout);
+}
+
+void Engine::createPushConstantRange(){
+    pushConstantRange = VkPushConstantRange{};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    pushConstantRange.size = pushConstantRangeSize;
+}
+
+void Engine::createPipelineLayout() {
+    VkResult result;
+
+    VkPipelineLayoutCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    createInfo.setLayoutCount = 1;
+    createInfo.pSetLayouts = &descriptorSetLayout;
+    createInfo.pushConstantRangeCount = 1;
+    createInfo.pPushConstantRanges = &pushConstantRange;
+
+    vkCreatePipelineLayout(logicalDevice, &createInfo, nullptr, &pipelineLayout);
+}
+
+void Engine::createSampler(){
+    VkResult result;
+
+    VkSamplerCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    createInfo.maxAnisotropy = 16;
+    createInfo.maxLod = VK_LOD_CLAMP_NONE;
+    createInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+    vkCreateSampler(logicalDevice, &createInfo, nullptr, &sampler);
+}
+
+void Engine::createShaders()
+{
+    std::vector<uint32_t> vertexCode, fragmentCode;
+    uint32_t lengthInBytes;
+    uint32_t* _vertexCode = (uint32_t*)platform_read_file("vertex.spv", &lengthInBytes);
+    vertexCode = std::vector<uint32_t>(_vertexCode, _vertexCode + lengthInBytes / sizeof(uint32_t));
+    uint32_t* _fragmentCode = (uint32_t*)platform_read_file("fragment.spv", &lengthInBytes);
+    fragmentCode = std::vector<uint32_t>(_fragmentCode, _fragmentCode + lengthInBytes / sizeof(uint32_t));
+
+
+    auto vkCreateShadersEXT = (PFN_vkCreateShadersEXT)vkGetInstanceProcAddr(instance, "vkCreateShadersEXT");
+    VkShaderCreateInfoEXT createInfos[2]{};
+
+    createInfos[0].sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
+    createInfos[0].flags = VK_SHADER_CREATE_LINK_STAGE_BIT_EXT;
+    createInfos[0].codeType = VK_SHADER_CODE_TYPE_SPIRV_EXT;
+    createInfos[0].pName = "main";
+    createInfos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    createInfos[0].nextStage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    createInfos[0].codeSize = sizeof(uint32_t) * vertexCode.size();
+    createInfos[0].pCode = vertexCode.data();
+    createInfos[0].setLayoutCount = 1;
+    createInfos[0].pSetLayouts = &descriptorSetLayout;
+    createInfos[0].pushConstantRangeCount = 1;
+    createInfos[0].pPushConstantRanges = &pushConstantRange;
+
+    createInfos[1].sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
+    createInfos[1].flags = VK_SHADER_CREATE_LINK_STAGE_BIT_EXT;
+    createInfos[1].codeType = VK_SHADER_CODE_TYPE_SPIRV_EXT;
+    createInfos[1].pName = "main";
+    createInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    createInfos[1].codeSize = sizeof(uint32_t) * fragmentCode.size();
+    createInfos[1].pCode = fragmentCode.data();
+    createInfos[1].setLayoutCount = 1;
+    createInfos[1].pSetLayouts = &descriptorSetLayout;
+    createInfos[1].pushConstantRangeCount = 1;
+    createInfos[1].pPushConstantRanges = &pushConstantRange;
+
+    vkCreateShadersEXT(logicalDevice,
+        sizeof(createInfos) / sizeof(VkShaderCreateInfoEXT),
+        createInfos,
+        nullptr,
+        shaders
+        );
+}
+
+void Engine::createTextureView()
+{
+    VkResult result;
+
+    VkImageViewCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+    createInfo.subresourceRange.baseMipLevel = 0;
+    createInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+    createInfo.subresourceRange.baseArrayLayer = 0;
+    createInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+    createInfo.image = texture.image;
+    createInfo.format = VK_FORMAT_B8G8R8A8_SRGB;
+    createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+
+    vkCreateImageView(logicalDevice, &createInfo, nullptr, &textureView);
 }

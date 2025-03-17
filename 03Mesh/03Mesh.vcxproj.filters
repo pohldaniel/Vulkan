@@ -96,6 +96,15 @@
     <ClInclude Include="Vulkan\swapchain.h">
       <Filter>Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="swapchain_element.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="entity.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="swap_chain.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\Vector.cpp">
@@ -153,6 +162,15 @@
       <Filter>Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Vulkan\swapchain.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="swapchain_element.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="entity.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="swap_chain.cpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
