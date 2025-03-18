@@ -10,6 +10,8 @@ PFN_vkCmdSetColorBlendEquationEXT pfn_vkCmdSetColorBlendEquationEXT = 0;
 PFN_vkCmdSetRasterizationSamplesEXT pfn_vkCmdSetRasterizationSamplesEXT = 0;
 PFN_vkCmdSetAlphaToCoverageEnableEXT pfn_vkCmdSetAlphaToCoverageEnableEXT = 0;
 PFN_vkCmdSetColorWriteMaskEXT pfn_vkCmdSetColorWriteMaskEXT = 0;
+PFN_vkCreateDebugUtilsMessengerEXT pfn_vkCreateDebugUtilsMessengerEXT = 0;
+PFN_vkCreateShadersEXT pfn_vkCreateShadersEXT = 0;
 
 void vkExtensionInit(VkInstance instance) {
 	pfn_vkCmdBindShadersEXT = reinterpret_cast<PFN_vkCmdBindShadersEXT>(vkGetInstanceProcAddr(instance, "vkCmdBindShadersEXT"));
@@ -21,6 +23,8 @@ void vkExtensionInit(VkInstance instance) {
 	pfn_vkCmdSetRasterizationSamplesEXT = reinterpret_cast<PFN_vkCmdSetRasterizationSamplesEXT>(vkGetInstanceProcAddr(instance, "vkCmdSetRasterizationSamplesEXT"));
 	pfn_vkCmdSetAlphaToCoverageEnableEXT = reinterpret_cast<PFN_vkCmdSetAlphaToCoverageEnableEXT>(vkGetInstanceProcAddr(instance, "vkCmdSetAlphaToCoverageEnableEXT"));
 	pfn_vkCmdSetColorWriteMaskEXT = reinterpret_cast<PFN_vkCmdSetColorWriteMaskEXT>(vkGetInstanceProcAddr(instance, "vkCmdSetColorWriteMaskEXT"));
+	pfn_vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+	pfn_vkCreateShadersEXT = reinterpret_cast<PFN_vkCreateShadersEXT>(vkGetInstanceProcAddr(instance, "vkCreateShadersEXT"));
 }
 
 void vkCmdBindShadersEXT(VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders){
@@ -59,3 +63,10 @@ void vkCmdSetColorWriteMaskEXT(VkCommandBuffer commandBuffer, uint32_t firstAtta
 	pfn_vkCmdSetColorWriteMaskEXT(commandBuffer, firstAttachment, attachmentCount, pColorWriteMasks);
 }
 
+VkResult vkCreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pMessenger) {
+	return pfn_vkCreateDebugUtilsMessengerEXT(instance, pCreateInfo, pAllocator, pMessenger);
+}
+
+VkResult vkCreateShadersEXT(VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders) {
+	return pfn_vkCreateShadersEXT(device, createInfoCount, pCreateInfos, pAllocator, pShaders);
+}

@@ -1,4 +1,4 @@
-#include "Vulkan/renderer.h"
+#include "Vulkan/VkContext.h"
 
 #include "Default.h"
 #include "Application.h"
@@ -27,7 +27,7 @@ void Default::update() {
 }
 
 void Default::render() {
-	Application::engine->draw();
+	vkDraw(Application::vkContext);
 }
 
 void Default::OnMouseMotion(Event::MouseMoveEvent& event) {

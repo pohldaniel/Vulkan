@@ -2,6 +2,14 @@
 
 #include <vma/vk_mem_alloc.h>
 
+struct Vertex {
+    float x;
+    float y;
+    float z;
+    float u;
+    float v;
+};
+
 struct VmaBuffer {
     VkBuffer buffer;
     VmaAllocation allocation;
@@ -13,7 +21,7 @@ struct VmaImage {
 };
 
 class SwapchainElement;
-class Engine;
+class VkContext;
 
 #pragma pack(1)
 struct EntityUniform{
@@ -38,7 +46,7 @@ public:
 
     void draw();
 
-    Engine* ctx;
+    VkContext* ctx;
     SwapchainElement* element;
 
     VmaBuffer uniform;

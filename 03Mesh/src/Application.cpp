@@ -4,7 +4,7 @@
 
 #include "Application.h"
 #include "Globals.h"
-#include "Vulkan2/VkExtension.h"
+#include "Vulkan/VkExtension.h"
 
 EventDispatcher& Application::EventDispatcher = EventDispatcher::Get();
 StateMachine* Application::Machine = nullptr;
@@ -17,7 +17,7 @@ bool Application::Init = false;
 DWORD Application::SavedExStyle;
 DWORD Application::SavedStyle;
 RECT Application::Savedrc;
-Engine* Application::engine = nullptr;
+VkContext Application::vkContext = {};
 
 VkInstance instance = nullptr;
 
@@ -185,10 +185,13 @@ LRESULT Application::ApplicationWndProc(HWND hWnd, UINT message, WPARAM wParam, 
 }
 
 void Application::initVulkan() {
+	vkInit(vkContext, Window);
+	//vkExtensionInit(vkContext.vkInstance);
+
 	//vk_init(&vkContext, Window);
 
-	Application::engine = new Engine(Window, Width, Height);
-	vkExtensionInit(engine->instance);
+	//Application::engine = new Engine(Window, Width, Height);
+	
 }
 
 const HWND& Application::GetWindow() {

@@ -3,9 +3,9 @@
 #include <iostream>
 #include <limits>
 #include "swap_chain.h"
-#include "Vulkan/renderer.h"
+#include "Vulkan/VkContext.h"
 
-Swapchain2::Swapchain2(Engine* ctx, unsigned width, unsigned height)
+Swapchain::Swapchain(VkContext* ctx, unsigned width, unsigned height)
     : ctx(ctx)
     , width(width)
     , height(height)
@@ -15,16 +15,16 @@ Swapchain2::Swapchain2(Engine* ctx, unsigned width, unsigned height)
     VkResult result;
 
     VkSurfaceCapabilitiesKHR capabilities;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(ctx->physicalDevice, ctx->surface, &capabilities);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(ctx->vkPhysicalDevice, ctx->vkSurfaceKHR, &capabilities);
 
     width = std::clamp(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
     height = std::clamp(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
 
     uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(ctx->physicalDevice, ctx->surface, &formatCount, nullptr);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(ctx->vkPhysicalDevice, ctx->vkSurfaceKHR, &formatCount, nullptr);
 
     std::vector<VkSurfaceFormatKHR> formats(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(ctx->physicalDevice, ctx->surface, &formatCount, formats.data());
+    vkGetPhysicalDeviceSurfaceFormatsKHR(ctx->vkPhysicalDevice, ctx->vkSurfaceKHR, &formatCount, formats.data());
 
     VkSurfaceFormatKHR chosenFormat = formats[0];
 
@@ -41,7 +41,7 @@ Swapchain2::Swapchain2(Engine* ctx, unsigned width, unsigned height)
 
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = ctx->surface;
+    createInfo.surface = ctx->vkSurfaceKHR;
     createInfo.minImageCount = capabilities.minImageCount;
     createInfo.imageFormat = chosenFormat.format;
     createInfo.imageColorSpace = chosenFormat.colorSpace;
@@ -54,13 +54,13 @@ Swapchain2::Swapchain2(Engine* ctx, unsigned width, unsigned height)
     createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
     createInfo.clipped = true;
 
-    vkCreateSwapchainKHR(ctx->logicalDevice, &createInfo, nullptr, &swapchain);
+    vkCreateSwapchainKHR(ctx->vkDevice, &createInfo, nullptr, &swapchain);
 
     uint32_t imageCount;
-    vkGetSwapchainImagesKHR(ctx->logicalDevice, swapchain, &imageCount, nullptr);
+    vkGetSwapchainImagesKHR(ctx->vkDevice, swapchain, &imageCount, nullptr);
 
     std::vector<VkImage> images(imageCount);
-    vkGetSwapchainImagesKHR(ctx->logicalDevice, swapchain, &imageCount, images.data());
+    vkGetSwapchainImagesKHR(ctx->vkDevice, swapchain, &imageCount, images.data());
 
     for (VkImage image : images)
     {
@@ -68,26 +68,26 @@ Swapchain2::Swapchain2(Engine* ctx, unsigned width, unsigned height)
     }
 }
 
-Swapchain2::~Swapchain2()
+Swapchain::~Swapchain()
 {
     for (SwapchainElement* element : elements)
     {
         delete element;
     }
     elements.clear();
-    vkDestroySwapchainKHR(ctx->logicalDevice, swapchain, nullptr);
+    vkDestroySwapchainKHR(ctx->vkDevice, swapchain, nullptr);
 }
 
-bool Swapchain2::draw()
+bool Swapchain::draw()
 {
     VkResult result;
 
     const SwapchainElement* currentElement = elements.at(currentFrame);
 
-    vkWaitForFences(ctx->logicalDevice, 1, &currentElement->fence, true, std::numeric_limits<uint64_t>::max());
+    vkWaitForFences(ctx->vkDevice, 1, &currentElement->fence, true, std::numeric_limits<uint64_t>::max());
 
     result = vkAcquireNextImageKHR(
-        ctx->logicalDevice,
+        ctx->vkDevice,
         swapchain,
         std::numeric_limits<uint64_t>::max(),
         currentElement->startSemaphore,
@@ -108,11 +108,11 @@ bool Swapchain2::draw()
 
     if (element->lastFence)
     {
-        vkWaitForFences(ctx->logicalDevice, 1, &element->lastFence, true, std::numeric_limits<uint64_t>::max());
+        vkWaitForFences(ctx->vkDevice, 1, &element->lastFence, true, std::numeric_limits<uint64_t>::max());
     }
     element->lastFence = currentElement->fence;
 
-    vkResetFences(ctx->logicalDevice, 1, &currentElement->fence);
+    vkResetFences(ctx->vkDevice, 1, &currentElement->fence);
 
     element->draw();
 
@@ -128,7 +128,7 @@ bool Swapchain2::draw()
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &currentElement->endSemaphore;
 
-    vkQueueSubmit(ctx->graphicsQueue, 1, &submitInfo, currentElement->fence);
+    vkQueueSubmit(ctx->vkQueue, 1, &submitInfo, currentElement->fence);
 
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -138,14 +138,11 @@ bool Swapchain2::draw()
     presentInfo.pSwapchains = &swapchain;
     presentInfo.pImageIndices = &imageIndex;
 
-    result = vkQueuePresentKHR(ctx->graphicsQueue, &presentInfo);
+    result = vkQueuePresentKHR(ctx->vkQueue, &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
-    {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR){
         return true;
-    }
-    else if (result < 0)
-    {
+    }else if (result < 0){
         std::cerr << "Failure running 'vkQueuePresentKHR': " << result << std::endl;
     }
 

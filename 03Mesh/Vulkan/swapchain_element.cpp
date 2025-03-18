@@ -1,8 +1,8 @@
+#include "Vulkan/VkContext.h"
 #include "swapchain_element.h"
 #include "swap_chain.h"
-#include "Vulkan/renderer.h"
 
-SwapchainElement::SwapchainElement(Swapchain2* swapchain, VkImage image)
+SwapchainElement::SwapchainElement(Swapchain* swapchain, VkImage image)
     : ctx(swapchain->ctx)
     , image(image)
     , swapchain(swapchain)
@@ -25,31 +25,31 @@ SwapchainElement::SwapchainElement(Swapchain2* swapchain, VkImage image)
         createInfo.format = swapchain->format;
         createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
-        vkCreateImageView(ctx->logicalDevice, &createInfo, nullptr, &imageView);
+        vkCreateImageView(ctx->vkDevice, &createInfo, nullptr, &imageView);
     }
 
     {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = ctx->commandPool;
+        allocInfo.commandPool = ctx->vkCommandPool;
         allocInfo.commandBufferCount = 1;
         allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 
-        vkAllocateCommandBuffers(ctx->logicalDevice, &allocInfo, &commandBuffer);
+        vkAllocateCommandBuffers(ctx->vkDevice, &allocInfo, &commandBuffer);
     }
 
     {
         VkSemaphoreCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-        vkCreateSemaphore(ctx->logicalDevice, &createInfo, nullptr, &startSemaphore);
+        vkCreateSemaphore(ctx->vkDevice, &createInfo, nullptr, &startSemaphore);
     }
 
     {
         VkSemaphoreCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
 
-        vkCreateSemaphore(ctx->logicalDevice, &createInfo, nullptr, &endSemaphore);
+        vkCreateSemaphore(ctx->vkDevice, &createInfo, nullptr, &endSemaphore);
     }
 
     {
@@ -57,7 +57,7 @@ SwapchainElement::SwapchainElement(Swapchain2* swapchain, VkImage image)
         createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
         createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-        vkCreateFence(ctx->logicalDevice, &createInfo, nullptr, &fence);
+        vkCreateFence(ctx->vkDevice, &createInfo, nullptr, &fence);
     }
 
     {
@@ -67,7 +67,7 @@ SwapchainElement::SwapchainElement(Swapchain2* swapchain, VkImage image)
         allocInfo.descriptorSetCount = 1;
         allocInfo.pSetLayouts = &ctx->descriptorSetLayout;
 
-        vkAllocateDescriptorSets(ctx->logicalDevice, &allocInfo, &descriptorSet);
+        vkAllocateDescriptorSets(ctx->vkDevice, &allocInfo, &descriptorSet);
     }
 
     {
@@ -85,7 +85,7 @@ SwapchainElement::SwapchainElement(Swapchain2* swapchain, VkImage image)
         textureDescriptorWrite.pImageInfo = &imageInfo;
 
         vkUpdateDescriptorSets(
-            ctx->logicalDevice,
+            ctx->vkDevice,
             1,
             &textureDescriptorWrite,
             0,
@@ -113,14 +113,14 @@ SwapchainElement::~SwapchainElement()
         delete entity;
     }
 
-    vkFreeDescriptorSets(ctx->logicalDevice, ctx->descriptorPool, 1, &descriptorSet);
+    vkFreeDescriptorSets(ctx->vkDevice, ctx->descriptorPool, 1, &descriptorSet);
 
-    vkDestroyFence(ctx->logicalDevice, fence, nullptr);
-    vkDestroySemaphore(ctx->logicalDevice, endSemaphore, nullptr);
-    vkDestroySemaphore(ctx->logicalDevice, startSemaphore, nullptr);
-    vkFreeCommandBuffers(ctx->logicalDevice, ctx->commandPool, 1, &commandBuffer);
+    vkDestroyFence(ctx->vkDevice, fence, nullptr);
+    vkDestroySemaphore(ctx->vkDevice, endSemaphore, nullptr);
+    vkDestroySemaphore(ctx->vkDevice, startSemaphore, nullptr);
+    vkFreeCommandBuffers(ctx->vkDevice, ctx->vkCommandPool, 1, &commandBuffer);
 
-    vkDestroyImageView(ctx->logicalDevice, imageView, nullptr);
+    vkDestroyImageView(ctx->vkDevice, imageView, nullptr);
 }
 
 void SwapchainElement::draw()
@@ -210,7 +210,7 @@ void SwapchainElement::prepareTexture()
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
     barrier.oldLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    barrier.image = ctx->texture.image;
+    barrier.image = ctx->vmaImage.image;
     barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     barrier.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
     barrier.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;

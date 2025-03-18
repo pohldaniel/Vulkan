@@ -1,8 +1,8 @@
-#include "entity.h"
 #include "swapchain_element.h"
 #include "swap_chain.h"
-#include "Vulkan/renderer.h"
-#include "Vulkan2/VkExtension.h"
+#include "VkContext.h"
+#include "VkExtension.h"
+#include "entity.h"
 
 Entity::Entity(SwapchainElement* element, float x, float y)
     : ctx(element->ctx)
@@ -52,7 +52,7 @@ Entity::Entity(SwapchainElement* element, float x, float y)
     descriptorWrite.pBufferInfo = &bufferInfo;
 
     vkUpdateDescriptorSets(
-        ctx->logicalDevice,
+        ctx->vkDevice,
         1,
         &descriptorWrite,
         0,
@@ -75,7 +75,7 @@ void Entity::draw()
         element->commandBuffer,
         0,
         1,
-        &ctx->mesh.buffer,
+        &ctx->vmaBuffer.buffer,
         &meshOffset
     );
 

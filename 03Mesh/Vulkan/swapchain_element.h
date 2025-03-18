@@ -2,13 +2,13 @@
 #include <vector>
 #include "entity.h"
 
-class Swapchain2;
-class Engine;
+class Swapchain;
+class VkContext;
 
 class SwapchainElement
 {
 public:
-    SwapchainElement(Swapchain2* swapchain, VkImage image);
+    SwapchainElement(Swapchain* swapchain, VkImage image);
     SwapchainElement(const SwapchainElement& rhs) = delete;
     SwapchainElement(SwapchainElement&& rhs) = delete;
     ~SwapchainElement();
@@ -18,8 +18,8 @@ public:
 
     void draw();
 
-    Engine* ctx;
-    Swapchain2* swapchain;
+    VkContext* ctx;
+    Swapchain* swapchain;
 
     VkImage image;
     VkImageView imageView;
