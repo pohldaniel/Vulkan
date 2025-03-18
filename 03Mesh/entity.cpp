@@ -2,6 +2,7 @@
 #include "swapchain_element.h"
 #include "swap_chain.h"
 #include "Vulkan/renderer.h"
+#include "Vulkan2/VkExtension.h"
 
 Entity::Entity(SwapchainElement* element, float x, float y)
     : ctx(element->ctx)
@@ -67,15 +68,6 @@ Entity::~Entity()
 
 void Entity::draw()
 {
-    auto vkCmdBindShadersEXT = (PFN_vkCmdBindShadersEXT)vkGetInstanceProcAddr(ctx->instance, "vkCmdBindShadersEXT");
-    auto vkCmdSetColorBlendEnableEXT = (PFN_vkCmdSetColorBlendEnableEXT)vkGetInstanceProcAddr(ctx->instance, "vkCmdSetColorBlendEnableEXT");
-    auto vkCmdSetSampleMaskEXT = (PFN_vkCmdSetSampleMaskEXT)vkGetInstanceProcAddr(ctx->instance, "vkCmdSetSampleMaskEXT");
-    auto vkCmdSetVertexInputEXT = (PFN_vkCmdSetVertexInputEXT)vkGetInstanceProcAddr(ctx->instance, "vkCmdSetVertexInputEXT");
-    auto vkCmdSetPolygonModeEXT = (PFN_vkCmdSetPolygonModeEXT)vkGetInstanceProcAddr(ctx->instance, "vkCmdSetPolygonModeEXT");
-    auto vkCmdSetColorBlendEquationEXT = (PFN_vkCmdSetColorBlendEquationEXT)vkGetInstanceProcAddr(ctx->instance, "vkCmdSetColorBlendEquationEXT");
-    auto vkCmdSetRasterizationSamplesEXT = (PFN_vkCmdSetRasterizationSamplesEXT)vkGetInstanceProcAddr(ctx->instance, "vkCmdSetRasterizationSamplesEXT");
-    auto vkCmdSetAlphaToCoverageEnableEXT = (PFN_vkCmdSetAlphaToCoverageEnableEXT)vkGetInstanceProcAddr(ctx->instance, "vkCmdSetAlphaToCoverageEnableEXT");
-    auto vkCmdSetColorWriteMaskEXT = (PFN_vkCmdSetColorWriteMaskEXT)vkGetInstanceProcAddr(ctx->instance, "vkCmdSetColorWriteMaskEXT");
 
     // Mesh
     VkDeviceSize meshOffset = 0;

@@ -4,7 +4,7 @@
 
 #include "Application.h"
 #include "Globals.h"
-
+#include "Vulkan2/VkExtension.h"
 
 EventDispatcher& Application::EventDispatcher = EventDispatcher::Get();
 StateMachine* Application::Machine = nullptr;
@@ -18,6 +18,8 @@ DWORD Application::SavedExStyle;
 DWORD Application::SavedStyle;
 RECT Application::Savedrc;
 Engine* Application::engine = nullptr;
+
+VkInstance instance = nullptr;
 
 HCURSOR Application::Cursor = LoadCursor(nullptr, IDC_ARROW);
 HICON Application::Icon = (HICON)LoadImage(NULL, "res/icon.ico", IMAGE_ICON, 0, 0, LR_LOADFROMFILE | LR_DEFAULTSIZE);
@@ -186,6 +188,7 @@ void Application::initVulkan() {
 	//vk_init(&vkContext, Window);
 
 	Application::engine = new Engine(Window, Width, Height);
+	vkExtensionInit(engine->instance);
 }
 
 const HWND& Application::GetWindow() {

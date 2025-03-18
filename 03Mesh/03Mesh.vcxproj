@@ -36,6 +36,7 @@
     <ClInclude Include="src\States\StateMachine.h" />
     <ClInclude Include="swapchain_element.h" />
     <ClInclude Include="swap_chain.h" />
+    <ClInclude Include="Vulkan2\VkExtension.h" />
     <ClInclude Include="Vulkan\command.h" />
     <ClInclude Include="Vulkan\device.h" />
     <ClInclude Include="Vulkan\frame.h" />
@@ -60,6 +61,7 @@
     <ClCompile Include="src\States\StateMachine.cpp" />
     <ClCompile Include="swapchain_element.cpp" />
     <ClCompile Include="swap_chain.cpp" />
+    <ClCompile Include="Vulkan2\VkExtension.cpp" />
     <ClCompile Include="Vulkan\command.cpp" />
     <ClCompile Include="Vulkan\device.cpp" />
     <ClCompile Include="Vulkan\frame.cpp" />
