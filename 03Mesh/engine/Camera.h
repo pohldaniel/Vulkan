@@ -1,31 +1,27 @@
-#ifndef __cameraH__
-#define __cameraH__
+#pragma once
 
 #include <glm/glm.hpp>
 #include <glm/gtc/constants.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-class CameraNew {
+#define _180_ON_PI  57.295779513082320877f
+#define PI_ON_180  0.0174532925199432957f
+
+class Camera {
 
 public:
 
-	CameraNew();
-	CameraNew(const glm::vec3& eye, const glm::vec3& target, const glm::vec3& up);
-	~CameraNew();
+	Camera();
+	Camera(const glm::vec3& eye, const glm::vec3& target, const glm::vec3& up);
+	~Camera();
 
     void perspective(float fovx, float aspect, float znear, float zfar);
 	void orthographic(float left, float right, float bottom, float top, float znear, float zfar);
 	void lookAt(const glm::vec3& eye, const glm::vec3& target, const glm::vec3& up);
-
-	//void move(float dx, float dy, float dz);
 	void move(const glm::vec3& direction);
-	/*void moveRelative(const glm::vec3& direction);
-	void moveX(float dx);
-	void moveY(float dy);
-	void moveZ(float dx);*/
+
 
 	virtual void rotate(float yaw, float pitch);
-	//void rotate(float yaw, float pitch, const glm::vec3& target);
 
     void setPosition(float x, float y, float z);
     void setPosition(const glm::vec3& position);
@@ -38,6 +34,8 @@ public:
 	const glm::mat4& getInvPerspectiveMatrix() const;
 	const glm::mat4& getOrthographicMatrix() const;
 	const glm::mat4& getInvOrthographicMatrix() const;
+
+	static const glm::mat4 IDENTITY;
 
 protected:
 
@@ -72,5 +70,3 @@ private:
 	glm::mat4		m_orthMatrix;
 	glm::mat4		m_invOrthMatrix;
 };
-
-#endif

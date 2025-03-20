@@ -87,14 +87,17 @@
     <ClInclude Include="Vulkan\VkExtension.h">
       <Filter>Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="engine\CameraNew.h">
-      <Filter>engine</Filter>
-    </ClInclude>
     <ClInclude Include="engine\TrackBall.h">
       <Filter>engine</Filter>
     </ClInclude>
     <ClInclude Include="Vulkan\Data.h">
       <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\ObjModel.h">
+      <Filter>engine</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\Camera.h">
+      <Filter>engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -146,7 +149,10 @@
     <ClCompile Include="Vulkan\VkExtension.cpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
-    <ClCompile Include="engine\CameraNew.cpp">
+    <ClCompile Include="engine\ObjModel.cpp">
+      <Filter>engine</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\Camera.cpp">
       <Filter>engine</Filter>
     </ClCompile>
   </ItemGroup>

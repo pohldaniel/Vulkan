@@ -1,14 +1,11 @@
-#include "CameraNew.h"
+#include "Camera.h"
 
-#define _180_ON_PI  57.295779513082320877f
-#define PI_ON_180  0.0174532925199432957f
-
-const glm::mat4 IDENTITY(1.0f, 0.0f, 0.0f, 0.0f,
+const glm::mat4 Camera::IDENTITY(1.0f, 0.0f, 0.0f, 0.0f,
 	0.0f, 1.0f, 0.0f, 0.0f,
 	0.0f, 0.0f, 1.0f, 0.0f,
 	0.0f, 0.0f, 0.0f, 1.0f);
 
-CameraNew::CameraNew(){
+Camera::Camera(){
 	
 	WORLD_XAXIS = glm::vec3(1.0f, 0.0f, 0.0f);
 	WORLD_YAXIS = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -35,7 +32,7 @@ CameraNew::CameraNew(){
 	updateViewMatrix();
 }
 
-CameraNew::CameraNew(const glm::vec3 &eye, const glm::vec3& target, const glm::vec3& up) {
+Camera::Camera(const glm::vec3 &eye, const glm::vec3& target, const glm::vec3& up) {
 
 	WORLD_XAXIS = glm::vec3(1.0f, 0.0f, 0.0f);
 	WORLD_YAXIS = glm::vec3(0.0f, 1.0f, 0.0f);
@@ -55,9 +52,9 @@ CameraNew::CameraNew(const glm::vec3 &eye, const glm::vec3& target, const glm::v
 	lookAt(eye, target, up);
 }
 
-CameraNew::~CameraNew() {}
+Camera::~Camera() {}
 
-void CameraNew::perspective(float fovx, float aspect, float znear, float zfar){
+void Camera::perspective(float fovx, float aspect, float znear, float zfar){
     m_persMatrix = glm::perspective(fovx, aspect, znear, zfar);
 
     float e = tanf(PI_ON_180 * fovx * 0.5f);
@@ -82,7 +79,7 @@ void CameraNew::perspective(float fovx, float aspect, float znear, float zfar){
 	m_invPersMatrix[3][3] = (znear + zfar) / (2 * zfar * znear);
 }
 
-void CameraNew::orthographic(float left, float right, float bottom, float top, float znear, float zfar){
+void Camera::orthographic(float left, float right, float bottom, float top, float znear, float zfar){
     m_orthMatrix = glm::ortho(left, right, bottom, top, znear, zfar);
 	
 	m_invOrthMatrix[0][0] = (right - left) * 0.5f;
@@ -106,7 +103,7 @@ void CameraNew::orthographic(float left, float right, float bottom, float top, f
 	m_invOrthMatrix[3][3] = 1.0f;
 }
 
-void CameraNew::lookAt(const glm::vec3& eye, const glm::vec3& target, const glm::vec3& up){
+void Camera::lookAt(const glm::vec3& eye, const glm::vec3& target, const glm::vec3& up){
 	m_eye = eye;
 	m_target = target;
 	m_offsetDistance = (m_target - m_eye).length();
@@ -161,7 +158,7 @@ void CameraNew::lookAt(const glm::vec3& eye, const glm::vec3& target, const glm:
 	m_invViewMatrix[3][3] = 1.0f;
 }
 
-void CameraNew::updateViewMatrix() {
+void Camera::updateViewMatrix() {
 
 	m_viewMatrix[3][0] = -glm::dot(m_xAxis, m_eye);
 	m_viewMatrix[3][1] = -glm::dot(m_yAxis, m_eye);
@@ -174,13 +171,13 @@ void CameraNew::updateViewMatrix() {
 	m_invViewMatrix[3][3] = 1.0f;
 }
 
-void CameraNew::rotate(float yaw, float pitch) {
+void Camera::rotate(float yaw, float pitch) {
 	rotateFirstPerson(yaw * m_rotationSpeed, pitch * m_rotationSpeed);
 	orthogonalize();
 	updateViewMatrix();
 }
 
-void CameraNew::rotateFirstPerson(float yaw, float pitch){
+void Camera::rotateFirstPerson(float yaw, float pitch){
 
 	m_accumPitchDegrees += pitch;
 	m_accumYawDegrees += yaw;
@@ -212,7 +209,7 @@ void CameraNew::rotateFirstPerson(float yaw, float pitch){
 	}
 }
 
-void CameraNew::orthogonalize() {
+void Camera::orthogonalize() {
 
     m_zAxis = glm::normalize(m_zAxis);
     m_yAxis = glm::normalize(glm::cross(m_zAxis, m_xAxis));
@@ -251,51 +248,51 @@ void CameraNew::orthogonalize() {
 	m_invViewMatrix[2][3] = 0.0f;
 }
 
-void CameraNew::move(const glm::vec3& direction) {
+void Camera::move(const glm::vec3& direction) {
 	m_eye += m_xAxis * direction[0] * m_movingSpeed;
 	m_eye += WORLD_YAXIS * direction[1] * m_movingSpeed;
 	m_eye += m_viewDir * direction[2] * m_movingSpeed;
 	updateViewMatrix();
 }
 
-void CameraNew::setPosition(float x, float y, float z){
+void Camera::setPosition(float x, float y, float z){
     m_eye = glm::vec3(x, y, z);
     updateViewMatrix();
 }
 
-void CameraNew::setPosition(const glm::vec3& position){
+void Camera::setPosition(const glm::vec3& position){
     m_eye = position;
     updateViewMatrix();
 }
 
-void CameraNew::setRotationSpeed(float rotationSpeed){
+void Camera::setRotationSpeed(float rotationSpeed){
 	m_rotationSpeed = rotationSpeed;
 }
 
-void CameraNew::setMovingSpeed(float movingSpeed){
+void Camera::setMovingSpeed(float movingSpeed){
 	m_movingSpeed = movingSpeed;
 }
 
-const glm::mat4& CameraNew::getPerspectiveMatrix() const{
+const glm::mat4& Camera::getPerspectiveMatrix() const{
 	return m_persMatrix;
 }
 
-const glm::mat4& CameraNew::getInvPerspectiveMatrix() const{
+const glm::mat4& Camera::getInvPerspectiveMatrix() const{
 	return  m_invPersMatrix;
 }
 
-const glm::mat4& CameraNew::getOrthographicMatrix() const{
+const glm::mat4& Camera::getOrthographicMatrix() const{
 	return m_orthMatrix;
 }
 
-const glm::mat4& CameraNew::getInvOrthographicMatrix() const {
+const glm::mat4& Camera::getInvOrthographicMatrix() const {
 	return m_invOrthMatrix;
 }
 
-const glm::mat4& CameraNew::getViewMatrix() const{
+const glm::mat4& Camera::getViewMatrix() const{
 	return m_viewMatrix;
 }
 
-const glm::mat4& CameraNew::getInvViewMatrix() const{
+const glm::mat4& Camera::getInvViewMatrix() const{
 	return m_invViewMatrix;
 }

@@ -2,7 +2,7 @@
 
 #include <engine/input/MouseEventListener.h>
 #include <engine/input/KeyboardEventListener.h>
-#include <engine/CameraNew.h>
+#include <engine/Camera.h>
 
 #include <States/StateMachine.h>
 
@@ -28,7 +28,7 @@ public:
 
 private:
 
-	CameraNew m_camera;
+	Camera m_camera;
 	UniformBufferObject m_uniformBufferObject;
 
 };
