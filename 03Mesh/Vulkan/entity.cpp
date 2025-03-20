@@ -20,14 +20,7 @@ Entity::Entity(SwapchainElement* element, float x, float y)
     VmaAllocationCreateInfo allocInfo{};
     allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
 
-    vmaCreateBuffer(
-        ctx->memoryAllocator,
-        &createInfo,
-        &allocInfo,
-        &uniform.buffer,
-        &uniform.allocation,
-        nullptr
-    );
+    vmaCreateBuffer(ctx->memoryAllocator,&createInfo,&allocInfo,&uniform.buffer, &uniform.allocation,nullptr);
 
     vmaMapMemory(ctx->memoryAllocator, uniform.allocation, reinterpret_cast<void**>(&uniformMapping));
 
@@ -51,13 +44,44 @@ Entity::Entity(SwapchainElement* element, float x, float y)
     descriptorWrite.descriptorCount = 1;
     descriptorWrite.pBufferInfo = &bufferInfo;
 
-    vkUpdateDescriptorSets(
-        ctx->vkDevice,
-        1,
-        &descriptorWrite,
-        0,
-        nullptr
-    );
+    vkUpdateDescriptorSets(ctx->vkDevice, 1, &descriptorWrite, 0, nullptr);
+
+    createMVP();
+}
+
+void Entity::createMVP() {
+    VkBufferCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    createInfo.size = sizeof(UniformBufferObject);
+    createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VmaAllocationCreateInfo allocInfo{};
+    allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+    vmaCreateBuffer(ctx->memoryAllocator, &createInfo, &allocInfo, &uniformMVP.buffer, &uniformMVP.allocation, nullptr);
+
+    vmaMapMemory(ctx->memoryAllocator, uniformMVP.allocation, reinterpret_cast<void**>(&uniformMappingMVP));
+
+    uniformMappingMVP->proj = glm::mat4(1.0f);
+    uniformMappingMVP->view = glm::mat4(1.0f);
+    uniformMappingMVP->model = glm::mat4(1.0f);
+
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = uniformMVP.buffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = VK_WHOLE_SIZE;
+
+    VkWriteDescriptorSet descriptorWrite{};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrite.dstSet = element->descriptorSet;
+    descriptorWrite.dstBinding = 1;
+    descriptorWrite.dstArrayElement = descriptorIndex;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pBufferInfo = &bufferInfo;
+
+    vkUpdateDescriptorSets(ctx->vkDevice, 1, &descriptorWrite, 0, nullptr);
 }
 
 Entity::~Entity()
@@ -66,7 +90,7 @@ Entity::~Entity()
     vmaDestroyBuffer(ctx->memoryAllocator, uniform.buffer, uniform.allocation);
 }
 
-void Entity::draw()
+void Entity::draw(const UniformBufferObject& ubo)
 {
 
     // Mesh
@@ -157,6 +181,10 @@ void Entity::draw()
 
     // Uniform
     uniformMapping->rotation += 0.01f;
+
+    uniformMappingMVP->model  = ubo.model;
+    uniformMappingMVP->view = ubo.view;
+    uniformMappingMVP->proj = ubo.proj;
 
     // Push constants
     int ids[] = {

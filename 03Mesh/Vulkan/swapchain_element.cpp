@@ -79,18 +79,12 @@ SwapchainElement::SwapchainElement(Swapchain* swapchain, VkImage image)
         VkWriteDescriptorSet textureDescriptorWrite{};
         textureDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         textureDescriptorWrite.dstSet = descriptorSet;
-        textureDescriptorWrite.dstBinding = 1;
+        textureDescriptorWrite.dstBinding = 2;
         textureDescriptorWrite.descriptorCount = 1;
         textureDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         textureDescriptorWrite.pImageInfo = &imageInfo;
 
-        vkUpdateDescriptorSets(
-            ctx->vkDevice,
-            1,
-            &textureDescriptorWrite,
-            0,
-            nullptr
-        );
+        vkUpdateDescriptorSets(ctx->vkDevice, 1, &textureDescriptorWrite, 0, nullptr);
     }
 
     static const float positions[4][2] = {
@@ -123,7 +117,7 @@ SwapchainElement::~SwapchainElement()
     vkDestroyImageView(ctx->vkDevice, imageView, nullptr);
 }
 
-void SwapchainElement::draw()
+void SwapchainElement::draw(const UniformBufferObject& ubo)
 {
     VkResult result;
 
@@ -191,7 +185,7 @@ void SwapchainElement::draw()
     // Draw entities
     for (Entity* entity : entities)
     {
-        entity->draw();
+        entity->draw(ubo);
     }
 
     // End rendering

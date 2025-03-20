@@ -18,6 +18,12 @@ layout(binding = 0) uniform Buffer {
     float aspect;
 } buffers[];
 
+layout(binding = 1) uniform UniformBufferObject {
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+} ubo;
+
 vec3 rotate(vec3 p, float a)
 {
     float s = sin(a);

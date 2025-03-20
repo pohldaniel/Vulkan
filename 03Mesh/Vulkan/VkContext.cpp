@@ -27,6 +27,8 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
 	return false;
 }
 
+static int MAX_FRAMES_IN_FLIGHT = 1;
+
 bool isTypeOf(VkPhysicalDevice& device, VkPhysicalDeviceType physicalDeviceType) {
 	VkPhysicalDeviceProperties properties;
 	vkGetPhysicalDeviceProperties(device, &properties);
@@ -86,22 +88,15 @@ void vkInit(VkContext& vkContext, void* window) {
     vkContext.createTexture();
     vkContext.createTextureView(vkContext.vkDevice);
 
-    vkContext.createShaders(vkContext.vkDevice);
-
-    
+    vkContext.createShaders(vkContext.vkDevice); 
     vkContext.createMesh();
-    
-
     vkContext.resize();
-
-
-    
-
+    //vkContext.createUniformBuffers(vkContext.vkDevice);
     vkContext.swapchain = new Swapchain(&vkContext, Application::Width, Application::Height);
 }
 
 void vkDraw(VkContext& vkContext) {
-    bool shouldResize = vkContext.swapchain->draw();
+    bool shouldResize = vkContext.swapchain->draw(vkContext.ubo);
 
     if (shouldResize){
         vkContext.resize();
@@ -445,6 +440,7 @@ void VkContext::createDescriptorPool(const VkDevice& vkDevice) {
 
     VkDescriptorPoolSize poolSizes[] = {
         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxDescriptorSets * maxDescriptorCount },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxDescriptorSets * maxDescriptorCount },
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, maxDescriptorSets * maxDescriptorCount }
     };
     VkDescriptorPoolCreateInfo createInfo{};
@@ -460,18 +456,24 @@ void VkContext::createDescriptorPool(const VkDevice& vkDevice) {
 void VkContext::createDescriptorSetLayout(const VkDevice& vkDevice) {
     VkResult result;
 
-    VkDescriptorSetLayoutBinding bindings[2]{};
+    VkDescriptorSetLayoutBinding bindings[3]{};
     bindings[0].binding = 0;
     bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     bindings[0].descriptorCount = maxDescriptorCount;
-    bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
     bindings[1].binding = 1;
-    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     bindings[1].descriptorCount = maxDescriptorCount;
-    bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    bindings[2].binding = 2;
+    bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[2].descriptorCount = maxDescriptorCount;
+    bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorBindingFlags bindingFlags[] = {
+        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
         VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
         VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
     };
@@ -579,4 +581,60 @@ void VkContext::createTextureView(const VkDevice& vkDevice){
     createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
 
     vkCreateImageView(vkDevice, &createInfo, nullptr, &textureView);
+}
+
+
+void VkContext::createUniformBuffers(const VkDevice& vkDevice) {
+    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
+
+    vkBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    vkDeviceMemory.resize(MAX_FRAMES_IN_FLIGHT);
+    vkBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
+
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        createBuffer(vkDevice, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vkBuffers[i], vkDeviceMemory[i]);
+        vkMapMemory(vkDevice, vkDeviceMemory[i], 0, bufferSize, 0, &vkBuffersMapped[i]);
+    }
+}
+
+void VkContext::createBuffer(const VkDevice& vkDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateBuffer(vkDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create buffer!");
+    }
+
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(vkDevice, buffer, &memRequirements);
+
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
+
+    if (vkAllocateMemory(vkDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate buffer memory!");
+    }
+
+    vkBindBufferMemory(vkDevice, buffer, bufferMemory, 0);
+}
+
+uint32_t VkContext::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(vkPhysicalDevice, &memProperties);
+    
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+    return 0;
+}
+
+void VkContext::updateUniformBuffer(const UniformBufferObject& ubo) {
+    memcpy(vkBuffersMapped[0], &ubo, sizeof(ubo));
 }

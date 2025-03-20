@@ -28,9 +28,6 @@
     <Filter Include="Source Files\States">
       <UniqueIdentifier>{ac41f596-5235-46be-b2b8-8c3446228480}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Vulkan2">
-      <UniqueIdentifier>{42eccc0b-d2fd-404e-ae28-67f01d5e2428}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="engine\Clock.h">
@@ -90,6 +87,15 @@
     <ClInclude Include="Vulkan\VkExtension.h">
       <Filter>Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="engine\CameraNew.h">
+      <Filter>engine</Filter>
+    </ClInclude>
+    <ClInclude Include="engine\TrackBall.h">
+      <Filter>engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Vulkan\Data.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\Vector.cpp">
@@ -139,6 +145,9 @@
     </ClCompile>
     <ClCompile Include="Vulkan\VkExtension.cpp">
       <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\CameraNew.cpp">
+      <Filter>engine</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

@@ -19,6 +19,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="engine\CameraNew.h" />
     <ClInclude Include="engine\Clock.h" />
     <ClInclude Include="engine\input\ApplicationEventListener.h" />
     <ClInclude Include="engine\input\Event.h" />
@@ -28,11 +29,13 @@
     <ClInclude Include="engine\input\Mouse.h" />
     <ClInclude Include="engine\input\MouseEventListener.h" />
     <ClInclude Include="engine\interfaces\IStateMachine.h" />
+    <ClInclude Include="engine\TrackBall.h" />
     <ClInclude Include="engine\Vector.h" />
     <ClInclude Include="src\Application.h" />
     <ClInclude Include="src\Globals.h" />
     <ClInclude Include="src\States\Default.h" />
     <ClInclude Include="src\States\StateMachine.h" />
+    <ClInclude Include="Vulkan\Data.h" />
     <ClInclude Include="Vulkan\entity.h" />
     <ClInclude Include="Vulkan\swapchain_element.h" />
     <ClInclude Include="Vulkan\swap_chain.h" />
@@ -40,6 +43,7 @@
     <ClInclude Include="Vulkan\VkExtension.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="engine\CameraNew.cpp" />
     <ClCompile Include="engine\input\ApplicationEventListener.cpp" />
     <ClCompile Include="engine\input\EventDispatcher.cpp" />
     <ClCompile Include="engine\input\Keyboard.cpp" />

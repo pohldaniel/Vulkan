@@ -16,7 +16,7 @@ public:
     Swapchain& operator=(const Swapchain& rhs) = delete;
     Swapchain& operator=(Swapchain&& rhs) = delete;
 
-    bool draw();
+    bool draw(const UniformBufferObject& ubo);
 
     VkContext* ctx;
 

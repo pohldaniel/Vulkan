@@ -2,8 +2,11 @@
 
 #include <engine/input/MouseEventListener.h>
 #include <engine/input/KeyboardEventListener.h>
+#include <engine/CameraNew.h>
 
 #include <States/StateMachine.h>
+
+#include <Vulkan/Data.h>
 
 class Default : public State, public MouseEventListener, public KeyboardEventListener {
 
@@ -24,5 +27,8 @@ public:
 	void OnKeyUp(Event::KeyboardEvent& event) override;
 
 private:
+
+	CameraNew m_camera;
+	UniformBufferObject m_uniformBufferObject;
 
 };

@@ -1,17 +1,7 @@
 #pragma once
-
+#include <vector>
 #include <vulkan/vulkan.h>
-#include <vma/vk_mem_alloc.h>
-
-struct VmaImage2 {
-    VkImage image;
-    VmaAllocation allocation;
-};
-
-struct VmaBuffer2 {
-    VkBuffer buffer;
-    VmaAllocation allocation;
-};
+#include "Data.h"
 
 class Swapchain;
 
@@ -33,6 +23,10 @@ struct VkContext {
     
     void createTextureView(const VkDevice& vkDevice);
     void resize();
+    void createUniformBuffers(const VkDevice& vkDevice);
+    void createBuffer(const VkDevice& vkDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    void updateUniformBuffer(const UniformBufferObject& ubo);
 
     VkExtent2D screenSize;
     VkInstance vkInstance;
@@ -54,11 +48,17 @@ struct VkContext {
     VkSampler sampler;
     VkImageView textureView;
     VkShaderEXT shaders[2];
-    VmaImage2 vmaImage;
-    VmaBuffer2 vmaBuffer;
+    VmaImage vmaImage;
+    VmaBuffer vmaBuffer;
     VmaAllocator memoryAllocator;
     VkQueue vkQueue;
     VkCommandPool vkCommandPool;
+
+    std::vector<VkBuffer> vkBuffers;
+    std::vector<VkDeviceMemory> vkDeviceMemory;
+    std::vector<void*> vkBuffersMapped;
+
+    UniformBufferObject ubo;
 
     Swapchain* swapchain;
     bool textureReady = false;

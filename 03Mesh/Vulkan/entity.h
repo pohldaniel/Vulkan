@@ -1,24 +1,7 @@
 #pragma once
 
-#include <vma/vk_mem_alloc.h>
 
-struct Vertex {
-    float x;
-    float y;
-    float z;
-    float u;
-    float v;
-};
-
-struct VmaBuffer {
-    VkBuffer buffer;
-    VmaAllocation allocation;
-};
-
-struct VmaImage {
-    VkImage image;
-    VmaAllocation allocation;
-};
+#include "Data.h"
 
 class SwapchainElement;
 class VkContext;
@@ -40,17 +23,21 @@ public:
     Entity(const Entity& rhs) = delete;
     Entity(Entity&& rhs) = delete;
     ~Entity();
+    void createMVP();
 
     Entity& operator=(const Entity& rhs) = delete;
     Entity& operator=(Entity&& rhs) = delete;
 
-    void draw();
+    void draw(const UniformBufferObject& ubo);
 
     VkContext* ctx;
     SwapchainElement* element;
 
     VmaBuffer uniform;
     EntityUniform* uniformMapping;
+
+    VmaBuffer uniformMVP;
+    UniformBufferObject* uniformMappingMVP;
 
 private:
     int descriptorIndex;
