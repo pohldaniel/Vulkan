@@ -576,6 +576,8 @@ void ObjModel::loadModelCpu(const char* _filename, const glm::vec3& axis, float 
 			m_meshes[j]->m_baseVertex = m_vertexBuffer.size() / m_stride;
 			m_meshes[j]->m_drawCount = indexBufferCreator.indexBufferOut.size();
 
+			std::for_each(indexBufferCreator.indexBufferOut.begin(), indexBufferCreator.indexBufferOut.end(), [&value = m_meshes[j]->m_baseVertex](unsigned int& n) { n += value; });
+
 			m_vertexBuffer.insert(m_vertexBuffer.end(), indexBufferCreator.vertexBufferOut.begin(), indexBufferCreator.vertexBufferOut.end());
 			m_indexBuffer.insert(m_indexBuffer.end(), indexBufferCreator.indexBufferOut.begin(), indexBufferCreator.indexBufferOut.end());
 		}
