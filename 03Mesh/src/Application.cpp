@@ -185,7 +185,7 @@ LRESULT Application::ApplicationWndProc(HWND hWnd, UINT message, WPARAM wParam, 
 }
 
 void Application::initVulkan() {
-	vkInit(VkContext, Window);
+	vlkInit(VkContext, Window);
 }
 
 const HWND& Application::GetWindow() {

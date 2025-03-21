@@ -16,7 +16,7 @@ public:
     SwapchainElement& operator=(const SwapchainElement& rhs) = delete;
     SwapchainElement& operator=(SwapchainElement&& rhs) = delete;
 
-    void draw(const UniformBufferObject& ubo);
+    void draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
 
     VkContext* ctx;
     Swapchain* swapchain;

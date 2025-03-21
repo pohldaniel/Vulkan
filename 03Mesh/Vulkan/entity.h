@@ -28,7 +28,7 @@ public:
     Entity& operator=(const Entity& rhs) = delete;
     Entity& operator=(Entity&& rhs) = delete;
 
-    void draw(const UniformBufferObject& ubo);
+    void draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
 
     VkContext* ctx;
     SwapchainElement* element;

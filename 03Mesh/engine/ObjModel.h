@@ -20,7 +20,6 @@
 
 #include "Camera.h"
 
-struct VkContext;
 class ObjModel;
 
 struct IndexBufferCreator {
@@ -64,13 +63,14 @@ public:
 	
 	void loadModelCpu(const char* filename, bool isStacked = false, bool withoutNormals = false, bool generateSmoothNormals = false, bool generateFlatNormals = false, bool generateSmoothTangents = false, bool rescale = false);
 	void loadModelCpu(const char* filename, const glm::vec3& axis, float degree, const glm::vec3& translate = glm::vec3(0.0f, 0.0f, 0.0f), float scale = 1.0f, bool asStacked = false, bool withoutNormals = false, bool generateSmoothNormals = false, bool generateFlatNormals = false, bool generateSmoothTangents = false, bool rescale = false);
-	void loadModelGpu(const VkContext vkContext, VkBuffer& vkbuffer, VkDeviceMemory& vkDeviceMemory);
 
 	const std::string& getMltPath();
 	const std::string& getModelDirectory();
 	const glm::vec3& getCenter() const;
 	const ObjMesh* getMesh(unsigned short index = 0u) const;
-	std::vector<ObjMesh*>& getMeshes();
+	const std::vector<ObjMesh*>& getMeshes() const;
+	const std::vector<float>& getVertexBuffer() const;
+	const std::vector<unsigned int>& getIndexBuffer() const;
 	unsigned int getNumberOfTriangles();
 
 	void generateTangents();

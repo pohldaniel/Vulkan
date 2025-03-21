@@ -71,12 +71,12 @@ char* platform_read_file2(const char* path, uint32_t* length) {
     return result;
 }
 
-void vkInit(VkContext& vkContext, void* window) {
+void vlkInit(VkContext& vkContext, void* window) {
     vkContext.createVkDevice(vkContext, window);
 	
     vkGetDeviceQueue(vkContext.vkDevice, vkContext.queueFamilyIndex, 0, &vkContext.vkQueue);
     vkContext.createCommandPool();
-
+    vkContext.createCommandBuffer();
 
     vkContext.createDescriptorPool(vkContext.vkDevice);
     vkContext.createDescriptorSetLayout(vkContext.vkDevice);
@@ -95,12 +95,77 @@ void vkInit(VkContext& vkContext, void* window) {
     vkContext.swapchain = new Swapchain(&vkContext, Application::Width, Application::Height);
 }
 
-void vkDraw(VkContext& vkContext) {
-    bool shouldResize = vkContext.swapchain->draw(vkContext.ubo);
+void vlkDraw(VkContext& vkContext, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount) {
+    bool shouldResize = vkContext.swapchain->draw(vkContext.ubo, vertex, index, drawCount);
 
     if (shouldResize){
         vkContext.resize();
     }
+}
+
+void vlkMapBuffer(const VkDeviceMemory& bufferMemory, const void* data, uint32_t size) {
+    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+
+    void* pMem = nullptr;
+    vkMapMemory(vkDevice, bufferMemory, 0, size, 0, &pMem);
+    memcpy(pMem, data, size);
+    vkUnmapMemory(vkDevice, bufferMemory);
+}
+
+void vlkCreateBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
+    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+    
+    VkBufferCreateInfo vkBufferCreateInfo = {};
+    vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    vkBufferCreateInfo.size = size;
+    vkBufferCreateInfo.usage = usage;
+    vkBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    vkCreateBuffer(vkDevice, &vkBufferCreateInfo, NULL, &buffer);
+
+    VkMemoryRequirements vkMemoryRequirements;
+    vkGetBufferMemoryRequirements(vkDevice, buffer, &vkMemoryRequirements);
+
+    VkMemoryAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = vkMemoryRequirements.size;
+    allocInfo.memoryTypeIndex = Application::VkContext.GetMemoryTypeIndex(vkMemoryRequirements.memoryTypeBits, properties);
+
+    vkAllocateMemory(vkDevice, &allocInfo, NULL, &bufferMemory);
+    vkBindBufferMemory(vkDevice, buffer, bufferMemory, 0);
+}
+
+void vlkCopyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size) {
+    const VkCommandBuffer& vkCommandBuffer = Application::VkContext.vkCommandBuffer;
+
+    VkCommandBufferBeginInfo vkCommandBufferBeginInfo = {};
+    vkCommandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    vkCommandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkCommandBufferBeginInfo.pNext = NULL;
+    vkCommandBufferBeginInfo.pInheritanceInfo = NULL;
+
+    vkBeginCommandBuffer(vkCommandBuffer, &vkCommandBufferBeginInfo);
+
+    VkBufferCopy vkBufferCopy = {};
+    vkBufferCopy.srcOffset = 0;
+    vkBufferCopy.dstOffset = 0;
+    vkBufferCopy.size = size;
+
+    vkCmdCopyBuffer(vkCommandBuffer, srcBuffer, dstBuffer, 1, &vkBufferCopy);
+    vkEndCommandBuffer(vkCommandBuffer);
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &vkCommandBuffer;
+    submitInfo.waitSemaphoreCount = 0;
+    submitInfo.pWaitSemaphores = VK_NULL_HANDLE;
+    submitInfo.pWaitDstStageMask = VK_NULL_HANDLE;
+    submitInfo.signalSemaphoreCount = 0;
+    submitInfo.pSignalSemaphores = VK_NULL_HANDLE;
+    submitInfo.pNext = NULL;
+
+    vkQueueSubmit(Application::VkContext.vkQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(Application::VkContext.vkQueue);
 }
 
 bool VkContext::createVkDevice(VkContext& vkContext, void* window){
@@ -316,6 +381,75 @@ void VkContext::createCommandPool() {
     poolInfo.flags = VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = queueFamilyIndex;
     vkCreateCommandPool(vkDevice, &poolInfo, 0, &vkCommandPool);
+}
+
+void VkContext::createCommandBuffer() {
+    VkCommandBufferAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = vkCommandPool;
+    allocInfo.commandBufferCount = 1;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+
+    vkAllocateCommandBuffers(vkDevice, &allocInfo, &vkCommandBuffer);
+}
+
+void VkContext::createBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
+    VkBufferCreateInfo vkBufferCreateInfo = {};
+    vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    vkBufferCreateInfo.size = size;
+    vkBufferCreateInfo.usage = usage;
+    vkBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    vkCreateBuffer(Application::VkContext.vkDevice, &vkBufferCreateInfo, NULL, &buffer);
+
+    VkMemoryRequirements vkMemoryRequirements;
+    vkGetBufferMemoryRequirements(Application::VkContext.vkDevice, buffer, &vkMemoryRequirements);
+
+    VkMemoryAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = vkMemoryRequirements.size;
+    allocInfo.memoryTypeIndex = Application::VkContext.GetMemoryTypeIndex(vkMemoryRequirements.memoryTypeBits, properties);
+    
+    vkAllocateMemory(Application::VkContext.vkDevice, &allocInfo, NULL, &bufferMemory);
+    vkBindBufferMemory(Application::VkContext.vkDevice, buffer, bufferMemory, 0);
+}
+
+void VkContext::mapBuffer(const VkDeviceMemory& bufferMemory, const void* data, uint32_t size) {
+    void* pMem = nullptr;
+    vkMapMemory(Application::VkContext.vkDevice, bufferMemory, 0, size, 0, &pMem);
+    memcpy(pMem, data, size);
+    vkUnmapMemory(Application::VkContext.vkDevice, bufferMemory);
+}
+
+void VkContext::copyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size) {
+    VkCommandBufferBeginInfo vkCommandBufferBeginInfo = {};
+    vkCommandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    vkCommandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkCommandBufferBeginInfo.pNext = NULL;
+    vkCommandBufferBeginInfo.pInheritanceInfo = NULL;
+
+    vkBeginCommandBuffer(vkCommandBuffer, &vkCommandBufferBeginInfo);
+
+    VkBufferCopy vkBufferCopy = {};
+    vkBufferCopy.srcOffset = 0;
+    vkBufferCopy.dstOffset = 0;
+    vkBufferCopy.size = size;
+
+    vkCmdCopyBuffer(vkCommandBuffer, srcBuffer, dstBuffer, 1, &vkBufferCopy);
+    vkEndCommandBuffer(vkCommandBuffer);
+    VkSubmitInfo submitInfo = {};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &vkCommandBuffer;
+    submitInfo.waitSemaphoreCount = 0;
+    submitInfo.pWaitSemaphores = VK_NULL_HANDLE;
+    submitInfo.pWaitDstStageMask = VK_NULL_HANDLE;
+    submitInfo.signalSemaphoreCount = 0;
+    submitInfo.pSignalSemaphores = VK_NULL_HANDLE;
+    submitInfo.pNext = NULL;
+
+    vkQueueSubmit(Application::VkContext.vkQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(Application::VkContext.vkQueue);
 }
 
 void VkContext::createAllocator() {

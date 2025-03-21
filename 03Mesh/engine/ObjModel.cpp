@@ -1,4 +1,3 @@
-#include <Vulkan/VkContext.h>
 #include "ObjModel.h"
 
 ObjModel::ObjModel() : m_center(glm::vec3(0.0f, 0.0f, 0.0f)) {
@@ -572,8 +571,7 @@ void ObjModel::loadModelCpu(const char* _filename, const glm::vec3& axis, float 
 			m_meshes[j]->m_drawCount = indexBufferCreator.indexBufferOut.size();
 			m_drawCount += m_meshes[j]->m_indexBuffer.size();
 
-		}else {
-			
+		}else {			
 			m_meshes[j]->m_baseIndex = m_indexBuffer.size();
 			m_meshes[j]->m_baseVertex = m_vertexBuffer.size() / m_stride;
 			m_meshes[j]->m_drawCount = indexBufferCreator.indexBufferOut.size();
@@ -606,32 +604,6 @@ void ObjModel::loadModelCpu(const char* _filename, const glm::vec3& axis, float 
 	return;
 }
 
-void ObjModel::loadModelGpu(const VkContext vkContext, VkBuffer& vkbuffer, VkDeviceMemory& vkDeviceMemory) {
-	std::cout << "Stride: " << m_meshes[0]->getStride() << " Size: " << sizeof(float) * m_meshes[0]->getVertexBuffer().size() << std::endl;
-
-	VkBufferCreateInfo vkBufferCreateInfo = {};
-	vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-	vkBufferCreateInfo.size = sizeof(float) * m_meshes[0]->getVertexBuffer().size();
-	vkBufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-	vkBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-	vkCreateBuffer(vkContext.vkDevice, &vkBufferCreateInfo, NULL, &vkbuffer);
-
-	VkMemoryRequirements vkMemoryRequirements;
-	vkGetBufferMemoryRequirements(vkContext.vkDevice, vkbuffer, &vkMemoryRequirements);
-
-	VkMemoryAllocateInfo allocInfo = {};
-	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-	allocInfo.allocationSize = vkMemoryRequirements.size;
-	allocInfo.memoryTypeIndex = vkContext.GetMemoryTypeIndex(vkMemoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-
-	vkAllocateMemory(vkContext.vkDevice, &allocInfo, NULL, &vkDeviceMemory);
-
-	vkBindBufferMemory(vkContext.vkDevice, vkbuffer, vkDeviceMemory, 0);
-
-	std::cout << " Size: " << vkMemoryRequirements.size << std::endl;
-}
-
 void ObjModel::drawRaw() const{
 	for (int j = 0; j < m_numberOfMeshes; j++) {
 		m_meshes[j]->drawRaw();
@@ -646,8 +618,16 @@ const ObjMesh* ObjModel::getMesh(unsigned short index) const {
 	return m_meshes[index];
 }
 
-std::vector<ObjMesh*>& ObjModel::getMeshes() {
+const std::vector<ObjMesh*>& ObjModel::getMeshes() const {
 	return m_meshes;
+}
+
+const std::vector<float>& ObjModel::getVertexBuffer() const {
+	return m_vertexBuffer;
+}
+
+const std::vector<unsigned int>& ObjModel::getIndexBuffer() const {
+	return m_indexBuffer;
 }
 
 unsigned int ObjModel::getNumberOfTriangles() {
@@ -657,17 +637,14 @@ unsigned int ObjModel::getNumberOfTriangles() {
 void ObjModel::generateTangents() {
 
 	if (m_isStacked) {
-		if (m_hasTangents) { return; }
-
+		if (m_hasTangents) 
+			return; 
 		ObjModel::GenerateTangents(m_vertexBuffer, m_indexBuffer, *this, m_hasNormals, m_hasTangents,  m_stride, 0, m_meshes.size());		
-		//ObjModel::CreateBuffer(m_vertexBuffer, m_indexBuffer, m_vao, m_vbo, m_ibo, m_stride);
-
 	}else {
 
 		for (int j = 0; j < m_meshes.size(); j++) {
 			if (m_meshes[j]->m_hasTangents) continue;
 			ObjModel::GenerateTangents(m_meshes[j]->m_vertexBuffer, m_meshes[j]->m_indexBuffer, *this, m_meshes[j]->m_hasNormals, m_meshes[j]->m_hasTangents, m_meshes[j]->m_stride, j, j + 1);
-			//ObjModel::CreateBuffer(m_meshes[j]->m_vertexBuffer, m_meshes[j]->m_indexBuffer, m_meshes[j]->m_vao, m_meshes[j]->m_vbo, m_meshes[j]->m_ibo, m_meshes[j]->m_stride);
 		}
 	}
 }
@@ -675,17 +652,16 @@ void ObjModel::generateTangents() {
 void ObjModel::generateNormals() {
 	
 	if (m_isStacked) {
-		if (m_hasNormals) { return; }
-
+		if (m_hasNormals)
+			return; 
 		ObjModel::GenerateNormals(m_vertexBuffer, m_indexBuffer, *this, m_hasNormals, m_stride, 0, m_meshes.size());
-		//ObjModel::CreateBuffer(m_vertexBuffer, m_indexBuffer, m_vao, m_vbo, m_ibo, m_stride);
+
 
 	}else {
 
 		for (int j = 0; j < m_meshes.size(); j++) {
 			if (m_meshes[j]->m_hasNormals) continue;
 			ObjModel::GenerateNormals(m_meshes[j]->m_vertexBuffer, m_meshes[j]->m_indexBuffer, *this, m_meshes[j]->m_hasNormals, m_meshes[j]->m_stride, j, j + 1);
-			//ObjModel::CreateBuffer(m_meshes[j]->m_vertexBuffer, m_meshes[j]->m_indexBuffer, m_meshes[j]->m_vao, m_meshes[j]->m_vbo, m_meshes[j]->m_ibo, m_meshes[j]->m_stride);
 		}
 	}
 }

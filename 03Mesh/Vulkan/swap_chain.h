@@ -16,7 +16,7 @@ public:
     Swapchain& operator=(const Swapchain& rhs) = delete;
     Swapchain& operator=(Swapchain&& rhs) = delete;
 
-    bool draw(const UniformBufferObject& ubo);
+    bool draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
 
     VkContext* ctx;
 

@@ -78,7 +78,7 @@ Swapchain::~Swapchain()
     vkDestroySwapchainKHR(ctx->vkDevice, swapchain, nullptr);
 }
 
-bool Swapchain::draw(const UniformBufferObject& ubo)
+bool Swapchain::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount)
 {
     VkResult result;
 
@@ -114,7 +114,7 @@ bool Swapchain::draw(const UniformBufferObject& ubo)
 
     vkResetFences(ctx->vkDevice, 1, &currentElement->fence);
 
-    element->draw(ubo);
+    element->draw(ubo, vertex, index, drawCount);
 
     VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 

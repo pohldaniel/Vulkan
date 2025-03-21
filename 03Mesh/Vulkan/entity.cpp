@@ -90,18 +90,12 @@ Entity::~Entity()
     vmaDestroyBuffer(ctx->memoryAllocator, uniform.buffer, uniform.allocation);
 }
 
-void Entity::draw(const UniformBufferObject& ubo)
-{
+void Entity::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount) {
 
     // Mesh
     VkDeviceSize meshOffset = 0;
-    vkCmdBindVertexBuffers(
-        element->commandBuffer,
-        0,
-        1,
-        &ctx->vmaBuffer.buffer,
-        &meshOffset
-    );
+    vkCmdBindVertexBuffers(element->commandBuffer, 0, 1, &vertex, &meshOffset);
+    vkCmdBindIndexBuffer(element->commandBuffer, index, 0, VK_INDEX_TYPE_UINT32);
 
     // Shader
     VkShaderStageFlagBits stages[] = {
@@ -109,43 +103,39 @@ void Entity::draw(const UniformBufferObject& ubo)
         VK_SHADER_STAGE_FRAGMENT_BIT
     };
 
-    vkCmdBindShadersEXT(
-        element->commandBuffer,
-        sizeof(stages) / sizeof(VkShaderStageFlagBits),
-        stages,
-        ctx->shaders
-        );
+    vkCmdBindShadersEXT(element->commandBuffer,sizeof(stages) / sizeof(VkShaderStageFlagBits),stages,ctx->shaders);
 
     // Vertex input settings
     VkVertexInputBindingDescription2EXT vertexBinding{};
     vertexBinding.sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT;
     vertexBinding.binding = 0;
-    vertexBinding.stride = sizeof(Vertex);
+    vertexBinding.stride = sizeof(float) * 8;
     vertexBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     vertexBinding.divisor = 1;
 
-    VkVertexInputAttributeDescription2EXT vertexAttributes[2]{};
+    VkVertexInputAttributeDescription2EXT vertexAttributes[3]{};
     vertexAttributes[0].sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT;
     vertexAttributes[0].location = 0;
     vertexAttributes[0].binding = 0;
     vertexAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
     vertexAttributes[0].offset = 0;
+
     vertexAttributes[1].sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT;
     vertexAttributes[1].location = 1;
     vertexAttributes[1].binding = 0;
     vertexAttributes[1].format = VK_FORMAT_R32G32_SFLOAT;
     vertexAttributes[1].offset = 3 * sizeof(float);
 
-    vkCmdSetVertexInputEXT(
-        element->commandBuffer,
-        1,
-        &vertexBinding,
-        sizeof(vertexAttributes) / sizeof(VkVertexInputAttributeDescription2EXT),
-        vertexAttributes
-        );
+    vertexAttributes[2].sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT;
+    vertexAttributes[2].location = 2;
+    vertexAttributes[2].binding = 0;
+    vertexAttributes[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+    vertexAttributes[2].offset = 5 * sizeof(float);
+
+    vkCmdSetVertexInputEXT(element->commandBuffer, 1, &vertexBinding, sizeof(vertexAttributes) / sizeof(VkVertexInputAttributeDescription2EXT),vertexAttributes);
 
     // Input assembly settings
-    vkCmdSetPrimitiveTopology(element->commandBuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+    vkCmdSetPrimitiveTopology(element->commandBuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     vkCmdSetPrimitiveRestartEnable(element->commandBuffer, false);
 
     // Rasterization settings
@@ -201,6 +191,5 @@ void Entity::draw(const UniformBufferObject& ubo)
         ids
     );
 
-    // Draw
-    vkCmdDraw(element->commandBuffer, 4, 1, 0, 0);
+    vkCmdDrawIndexed(element->commandBuffer, drawCount, 1, 0, 0, 0);
 }

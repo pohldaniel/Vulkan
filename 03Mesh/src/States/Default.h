@@ -37,7 +37,12 @@ private:
 	VkBuffer m_srcVertexBuffer;
 	VkDeviceMemory m_srcVertexBufferMemory;
 
+	VkBuffer m_srcIndexBuffer;
+	VkDeviceMemory m_srcIndexBufferMemory;
+
 	VkBuffer m_dstVertexBuffer;
 	VkDeviceMemory m_dstVertexBufferMemory;
-	VkCommandBuffer commandBuffer;
+
+	VkBuffer m_dstIndexBuffer;
+	VkDeviceMemory m_dstIndexBufferMemory;
 };

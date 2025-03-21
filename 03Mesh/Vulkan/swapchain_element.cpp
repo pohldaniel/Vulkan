@@ -117,7 +117,7 @@ SwapchainElement::~SwapchainElement()
     vkDestroyImageView(ctx->vkDevice, imageView, nullptr);
 }
 
-void SwapchainElement::draw(const UniformBufferObject& ubo)
+void SwapchainElement::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount)
 {
     VkResult result;
 
@@ -185,7 +185,7 @@ void SwapchainElement::draw(const UniformBufferObject& ubo)
     // Draw entities
     for (Entity* entity : entities)
     {
-        entity->draw(ubo);
+        entity->draw(ubo, vertex, index, drawCount);
     }
 
     // End rendering

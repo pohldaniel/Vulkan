@@ -9,6 +9,11 @@ struct VkContext {
 
     bool createVkDevice(VkContext& vkcontext, void* window);
     void createCommandPool();
+    void createCommandBuffer();
+    void copyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size);
+    void createBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+    void mapBuffer(const VkDeviceMemory& bufferMemory, const void* data, uint32_t size);
+
     void createMesh();
     void createTexture();
     void createAllocator();
@@ -21,6 +26,9 @@ struct VkContext {
     void createPipelineLayout(const VkDevice& vkDevice);
     void createSampler(const VkDevice& vkDevice);
     
+
+
+
     void createTextureView(const VkDevice& vkDevice);
     void resize();
     void createUniformBuffers(const VkDevice& vkDevice);
@@ -54,6 +62,7 @@ struct VkContext {
     VmaAllocator memoryAllocator;
     VkQueue vkQueue;
     VkCommandPool vkCommandPool;
+    VkCommandBuffer vkCommandBuffer;
 
     std::vector<VkBuffer> vkBuffers;
     std::vector<VkDeviceMemory> vkDeviceMemory;
@@ -66,6 +75,9 @@ struct VkContext {
 };
 
 extern "C" {
-    void vkInit(VkContext& vkContext, void* window);
-    void vkDraw(VkContext& vkContext);
+    void vlkInit(VkContext& vkContext, void* window);
+    void vlkDraw(VkContext& vkContext, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
+    void vlkMapBuffer(const VkDeviceMemory& bufferMemory, const void* data, uint32_t size);
+    void vlkCreateBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
+    void vlkCopyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size);
 }
