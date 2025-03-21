@@ -334,10 +334,7 @@ void Application::processEvent(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 		//}
 #if DEVBUILD
 		case 'z': case 'Z': {
-			StateMachine::ToggleWireframe();
-			break;
-		}case 'v': case 'V': {
-			ToggleVerticalSync();
+			vlkToggleWireframe();
 			break;
 		}
 #endif

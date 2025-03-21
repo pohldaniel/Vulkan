@@ -6,6 +6,7 @@
 #define HEIGHT 768
 
 #define DEBUG 1
+#define DEVBUILD 1
 #define PHYSICS_STEP 0.0166666666666667f
 
 namespace Globals {

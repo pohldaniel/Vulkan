@@ -141,8 +141,9 @@ void Entity::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const 
     // Rasterization settings
     vkCmdSetRasterizerDiscardEnable(element->commandBuffer, false);
     vkCmdSetCullMode(element->commandBuffer, VK_CULL_MODE_NONE);
-    vkCmdSetPolygonModeEXT(element->commandBuffer, VK_POLYGON_MODE_FILL);
+    vkCmdSetPolygonModeEXT(element->commandBuffer, ctx->vkPolygonMode);
     vkCmdSetDepthBiasEnable(element->commandBuffer, false);
+    vkCmdSetLineWidth(element->commandBuffer, 1.0f);
 
     // Multisample settings
     vkCmdSetRasterizationSamplesEXT(element->commandBuffer, VK_SAMPLE_COUNT_1_BIT);

@@ -25,7 +25,7 @@ struct VkContext {
     void createPushConstantRange(const VkDevice& vkDevice);
     void createPipelineLayout(const VkDevice& vkDevice);
     void createSampler(const VkDevice& vkDevice);
-    
+  
 
 
 
@@ -63,6 +63,7 @@ struct VkContext {
     VkQueue vkQueue;
     VkCommandPool vkCommandPool;
     VkCommandBuffer vkCommandBuffer;
+    VkFormat vkDepthFormat;
 
     std::vector<VkBuffer> vkBuffers;
     std::vector<VkDeviceMemory> vkDeviceMemory;
@@ -72,6 +73,8 @@ struct VkContext {
 
     Swapchain* swapchain;
     bool textureReady = false;
+
+    VkPolygonMode vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
 };
 
 extern "C" {
@@ -80,4 +83,5 @@ extern "C" {
     void vlkMapBuffer(const VkDeviceMemory& bufferMemory, const void* data, uint32_t size);
     void vlkCreateBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
     void vlkCopyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size);
+    void vlkToggleWireframe();
 }

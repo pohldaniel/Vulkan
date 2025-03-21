@@ -33,10 +33,18 @@ public:
     VkDescriptorSet descriptorSet;
     int nextUniformIndex = 0;
 
+    VkImage depthImage;
+    VkImageView depthImageView;
+    VkDeviceMemory depthImageMemory;
+
     std::vector<Entity*> entities;
 
 private:
     void prepareTexture();
     void imageToAttachmentLayout();
     void imageToPresentLayout();
+
+    void createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView& vkImageView);
+    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 };

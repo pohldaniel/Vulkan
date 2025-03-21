@@ -62,24 +62,20 @@ Swapchain::Swapchain(VkContext* ctx, unsigned width, unsigned height)
     std::vector<VkImage> images(imageCount);
     vkGetSwapchainImagesKHR(ctx->vkDevice, swapchain, &imageCount, images.data());
 
-    for (VkImage image : images)
-    {
+    for (VkImage image : images){
         elements.push_back(new SwapchainElement(this, image));
     }
 }
 
-Swapchain::~Swapchain()
-{
-    for (SwapchainElement* element : elements)
-    {
+Swapchain::~Swapchain(){
+    for (SwapchainElement* element : elements){
         delete element;
     }
     elements.clear();
     vkDestroySwapchainKHR(ctx->vkDevice, swapchain, nullptr);
 }
 
-bool Swapchain::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount)
-{
+bool Swapchain::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount){
     VkResult result;
 
     const SwapchainElement* currentElement = elements.at(currentFrame);

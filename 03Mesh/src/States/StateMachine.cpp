@@ -1,8 +1,6 @@
 #include "StateMachine.h"
 #include "Application.h"
 
-bool StateMachine::EnableWireframe = false;
-
 StateMachine::StateMachine(const float& dt, const float& fdt) : m_dt(dt), m_fdt(fdt) {
 
 }
@@ -48,14 +46,6 @@ void StateMachine::resizeState(int deltaW, int deltaH, States state) {
 		resizeState(deltaW, deltaH, state);
 		m_states.push(temp);
 	}
-}
-
-void StateMachine::ToggleWireframe() {
-	EnableWireframe = !EnableWireframe;
-}
-
-bool& StateMachine::GetEnableWireframe() {
-	return EnableWireframe;
 }
 
 /////////////////////////////////////////////

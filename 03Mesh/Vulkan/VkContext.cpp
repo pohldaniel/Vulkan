@@ -168,6 +168,13 @@ void vlkCopyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_
     vkQueueWaitIdle(Application::VkContext.vkQueue);
 }
 
+void vlkToggleWireframe() {
+    if (Application::VkContext.vkPolygonMode == VkPolygonMode::VK_POLYGON_MODE_FILL)
+        Application::VkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_LINE;
+    else
+        Application::VkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
+}
+
 bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 	/*uint32_t amountOfInstanceLayers = 0;
 	vkEnumerateInstanceLayerProperties(&amountOfInstanceLayers, NULL);
@@ -363,6 +370,26 @@ bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 
 	vkCreateDevice(vkContext.vkPhysicalDevice, &deviceInfo, 0, &vkContext.vkDevice);
 
+    const VkFormat depthFormats[] = {
+        VK_FORMAT_D32_SFLOAT,
+        VK_FORMAT_D32_SFLOAT_S8_UINT,
+        VK_FORMAT_D24_UNORM_S8_UINT
+    };
+
+
+    VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL;
+    VkFormatFeatureFlagBits features = VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+    for (uint32_t i = 0; i < 3; i++) {
+        VkFormatProperties properties;
+        vkGetPhysicalDeviceFormatProperties(vkContext.vkPhysicalDevice, depthFormats[i], &properties);
+        if (tiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & features) == features) {
+            vkDepthFormat = depthFormats[i];
+        }else if (tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & features) == features) {
+            vkDepthFormat = depthFormats[i];
+        }
+    }
+    
 	return true;
 }
 
