@@ -1,7 +1,7 @@
-
+#include <Vulkan/VkContext.h>
 #include "ObjModel.h"
 
-ObjModel::ObjModel()  {
+ObjModel::ObjModel() : m_center(glm::vec3(0.0f, 0.0f, 0.0f)) {
 
 	m_hasMaterial = false;
 	m_isStacked = false;
@@ -38,7 +38,7 @@ ObjModel::ObjModel(ObjModel const& rhs) {
 	m_instances = rhs.m_instances;
 }
 
-ObjModel::ObjModel(ObjModel&& rhs) {
+ObjModel::ObjModel(ObjModel&& rhs) noexcept {
 	m_numberOfVertices = rhs.m_numberOfVertices;
 	m_numberOfTriangles = rhs.m_numberOfTriangles;
 	m_numberOfMeshes = rhs.m_numberOfMeshes;
@@ -82,7 +82,7 @@ ObjModel& ObjModel::operator=(const ObjModel& rhs) {
 	return *this;
 }
 
-ObjModel& ObjModel::operator=(ObjModel&& rhs) {
+ObjModel& ObjModel::operator=(ObjModel&& rhs) noexcept {
 	m_numberOfVertices = rhs.m_numberOfVertices;
 	m_numberOfTriangles = rhs.m_numberOfTriangles;
 	m_numberOfMeshes = rhs.m_numberOfMeshes;
@@ -128,22 +128,20 @@ const glm::vec3& ObjModel::getCenter() const {
 	return m_center;
 }
 
-std::string ObjModel::getMltPath() {
+const std::string& ObjModel::getMltPath() {
 	return m_mltPath;
 }
 
-std::string ObjModel::getModelDirectory() {
+const std::string& ObjModel::getModelDirectory() {
 	return m_modelDirectory;
 }
 
 void ObjModel::loadModel(const char* filename, bool isStacked, bool withoutNormals, bool generateSmoothNormals, bool generateFlatNormals, bool generateSmoothTangents, bool rescale) {
 	loadModelCpu(filename, isStacked, withoutNormals, generateSmoothNormals, generateFlatNormals, generateSmoothTangents, rescale);
-	loadModelGpu();
 }
 
 void ObjModel::loadModel(const char* filename, const glm::vec3& axis, float degree, const glm::vec3& translate, float scale, bool isStacked, bool withoutNormals, bool generateSmoothNormals, bool generateFlatNormals, bool generateSmoothTangents, bool rescale) {
 	loadModelCpu(filename, axis, degree, translate, scale, isStacked, withoutNormals, generateSmoothNormals, generateFlatNormals, generateSmoothTangents, rescale);
-	loadModelGpu();
 }
 
 void ObjModel::loadModelCpu(const char* filename, bool isStacked, bool withoutNormals, bool generateSmoothNormals, bool generateFlatNormals, bool generateSmoothTangents, bool rescale) {
@@ -608,8 +606,30 @@ void ObjModel::loadModelCpu(const char* _filename, const glm::vec3& axis, float 
 	return;
 }
 
-void ObjModel::loadModelGpu() {
-	
+void ObjModel::loadModelGpu(const VkContext vkContext, VkBuffer& vkbuffer, VkDeviceMemory& vkDeviceMemory) {
+	std::cout << "Stride: " << m_meshes[0]->getStride() << " Size: " << sizeof(float) * m_meshes[0]->getVertexBuffer().size() << std::endl;
+
+	VkBufferCreateInfo vkBufferCreateInfo = {};
+	vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+	vkBufferCreateInfo.size = sizeof(float) * m_meshes[0]->getVertexBuffer().size();
+	vkBufferCreateInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+	vkBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+	vkCreateBuffer(vkContext.vkDevice, &vkBufferCreateInfo, NULL, &vkbuffer);
+
+	VkMemoryRequirements vkMemoryRequirements;
+	vkGetBufferMemoryRequirements(vkContext.vkDevice, vkbuffer, &vkMemoryRequirements);
+
+	VkMemoryAllocateInfo allocInfo = {};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = vkMemoryRequirements.size;
+	allocInfo.memoryTypeIndex = vkContext.GetMemoryTypeIndex(vkMemoryRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+	vkAllocateMemory(vkContext.vkDevice, &allocInfo, NULL, &vkDeviceMemory);
+
+	vkBindBufferMemory(vkContext.vkDevice, vkbuffer, vkDeviceMemory, 0);
+
+	std::cout << " Size: " << vkMemoryRequirements.size << std::endl;
 }
 
 void ObjModel::drawRaw() const{
@@ -1366,7 +1386,7 @@ ObjMesh::ObjMesh(ObjMesh const& rhs) {
 	m_textureIndex = rhs.m_textureIndex;
 }
 
-ObjMesh::ObjMesh(ObjMesh&& rhs) {
+ObjMesh::ObjMesh(ObjMesh&& rhs) noexcept {
 	m_model = rhs.m_model;
 	m_mltName = rhs.m_mltName;
 	m_numberOfTriangles = rhs.m_numberOfTriangles;
@@ -1401,7 +1421,7 @@ ObjMesh& ObjMesh::operator=(const ObjMesh& rhs) {
 	return *this;
 }
 
-ObjMesh& ObjMesh::operator=(ObjMesh&& rhs) {
+ObjMesh& ObjMesh::operator=(ObjMesh&& rhs) noexcept {
 	m_model = rhs.m_model;
 	m_mltName = rhs.m_mltName;
 	m_numberOfTriangles = rhs.m_numberOfTriangles;
@@ -1438,15 +1458,15 @@ void ObjMesh::draw(const Camera& camera) const {
 
 }
 
-std::vector<float>& ObjMesh::getVertexBuffer() {
+const std::vector<float>& ObjMesh::getVertexBuffer() const {
 	return m_vertexBuffer;
 }
 
-std::vector<unsigned int>& ObjMesh::getIndexBuffer() {
+const std::vector<unsigned int>& ObjMesh::getIndexBuffer() const {
 	return m_indexBuffer;
 }
 
-int ObjMesh::getStride() {
+const int ObjMesh::getStride() const {
 	return m_stride;
 }
 

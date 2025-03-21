@@ -1,8 +1,10 @@
 #pragma once
 
+#include <vulkan/vulkan.h>
 #include <engine/input/MouseEventListener.h>
 #include <engine/input/KeyboardEventListener.h>
 #include <engine/Camera.h>
+#include <engine/ObjModel.h>
 
 #include <States/StateMachine.h>
 
@@ -30,5 +32,12 @@ private:
 
 	Camera m_camera;
 	UniformBufferObject m_uniformBufferObject;
+	ObjModel m_model;
 
+	VkBuffer m_srcVertexBuffer;
+	VkDeviceMemory m_srcVertexBufferMemory;
+
+	VkBuffer m_dstVertexBuffer;
+	VkDeviceMemory m_dstVertexBufferMemory;
+	VkCommandBuffer commandBuffer;
 };

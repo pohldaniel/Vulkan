@@ -638,3 +638,24 @@ uint32_t VkContext::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags pr
 void VkContext::updateUniformBuffer(const UniformBufferObject& ubo) {
     memcpy(vkBuffersMapped[0], &ubo, sizeof(ubo));
 }
+
+uint32_t VkContext::GetMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties) const{
+    VkPhysicalDeviceMemoryProperties vkPhysicalDeviceMemoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(vkPhysicalDevice, &vkPhysicalDeviceMemoryProperties);
+
+    for (uint32_t i = 0; i < vkPhysicalDeviceMemoryProperties.memoryTypeCount; i++) {
+        const VkMemoryType& memType = vkPhysicalDeviceMemoryProperties.memoryTypes[i];
+        uint32_t bitmask = (1 << i);
+        bool isMemTypeSupported = (typeFilter & bitmask);
+        bool hasRequiredMemProps = ((memType.propertyFlags & properties) == properties);
+
+        if (isMemTypeSupported && hasRequiredMemProps)
+            return i;
+
+        //if ((typeFilter & (1 << i)) && (vkPhysicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+           // return i;
+        //}
+    }
+    std::cout << "Failed: " << std::endl;
+    return 0;
+}

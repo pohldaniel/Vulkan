@@ -17,7 +17,7 @@ bool Application::Init = false;
 DWORD Application::SavedExStyle;
 DWORD Application::SavedStyle;
 RECT Application::Savedrc;
-VkContext Application::vkContext = {};
+VkContext Application::VkContext = {};
 
 VkInstance instance = nullptr;
 
@@ -185,13 +185,7 @@ LRESULT Application::ApplicationWndProc(HWND hWnd, UINT message, WPARAM wParam, 
 }
 
 void Application::initVulkan() {
-	vkInit(vkContext, Window);
-	//vkExtensionInit(vkContext.vkInstance);
-
-	//vk_init(&vkContext, Window);
-
-	//Application::engine = new Engine(Window, Width, Height);
-	
+	vkInit(VkContext, Window);
 }
 
 const HWND& Application::GetWindow() {

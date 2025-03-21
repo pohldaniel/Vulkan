@@ -20,6 +20,7 @@
 
 #include "Camera.h"
 
+struct VkContext;
 class ObjModel;
 
 struct IndexBufferCreator {
@@ -50,9 +51,9 @@ public:
 
 	ObjModel();
 	ObjModel(ObjModel const& rhs);
-	ObjModel(ObjModel&& rhs);
+	ObjModel(ObjModel&& rhs) noexcept;
 	ObjModel& operator=(const ObjModel& rhs);
-	ObjModel& operator=(ObjModel&& rhs);
+	ObjModel& operator=(ObjModel&& rhs) noexcept;
 	~ObjModel();
 
 	void drawRaw() const;
@@ -63,10 +64,10 @@ public:
 	
 	void loadModelCpu(const char* filename, bool isStacked = false, bool withoutNormals = false, bool generateSmoothNormals = false, bool generateFlatNormals = false, bool generateSmoothTangents = false, bool rescale = false);
 	void loadModelCpu(const char* filename, const glm::vec3& axis, float degree, const glm::vec3& translate = glm::vec3(0.0f, 0.0f, 0.0f), float scale = 1.0f, bool asStacked = false, bool withoutNormals = false, bool generateSmoothNormals = false, bool generateFlatNormals = false, bool generateSmoothTangents = false, bool rescale = false);
-	void loadModelGpu();
+	void loadModelGpu(const VkContext vkContext, VkBuffer& vkbuffer, VkDeviceMemory& vkDeviceMemory);
 
-	std::string getMltPath();
-	std::string getModelDirectory();
+	const std::string& getMltPath();
+	const std::string& getModelDirectory();
 	const glm::vec3& getCenter() const;
 	const ObjMesh* getMesh(unsigned short index = 0u) const;
 	std::vector<ObjMesh*>& getMeshes();
@@ -117,17 +118,17 @@ public:
 	ObjMesh(std::string mltName, unsigned int numberTriangles, ObjModel* model);
 	ObjMesh(unsigned int numberTriangles, ObjModel* model);
 	ObjMesh(ObjMesh const& rhs);
-	ObjMesh(ObjMesh&& rhs);
+	ObjMesh(ObjMesh&& rhs) noexcept;
 	ObjMesh& operator=(const ObjMesh& rhs);
-	ObjMesh& operator=(ObjMesh&& rhs);
+	ObjMesh& operator=(ObjMesh&& rhs) noexcept;
 	~ObjMesh();
 
 	void drawRaw() const;
 	void draw(const Camera& camera) const;
 	
-	std::vector<float>& getVertexBuffer();
-	std::vector<unsigned int>& getIndexBuffer();
-	int getStride();
+	const std::vector<float>& getVertexBuffer() const;
+	const std::vector<unsigned int>& getIndexBuffer() const;
+	const int getStride() const;
 	short getMaterialIndex() const;
 	void setMaterialIndex(short index) const;
 	short getTextureIndex() const;
