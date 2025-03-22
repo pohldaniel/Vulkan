@@ -82,6 +82,7 @@ void vlkInit(VkContext& vkContext, void* window) {
     vkContext.createDescriptorSetLayout(vkContext.vkDevice);
     vkContext.createPushConstantRange(vkContext.vkDevice);
     vkContext.createPipelineLayout(vkContext.vkDevice);
+    
     vkContext.createSampler(vkContext.vkDevice);
 
     vkContext.createAllocator();
@@ -93,6 +94,7 @@ void vlkInit(VkContext& vkContext, void* window) {
     vkContext.resize();
     //vkContext.createUniformBuffers(vkContext.vkDevice);
     vkContext.swapchain = new Swapchain(&vkContext, Application::Width, Application::Height);
+    //vkContext.createPipeline(vkContext.vkDevice);
 }
 
 void vlkDraw(VkContext& vkContext, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount) {

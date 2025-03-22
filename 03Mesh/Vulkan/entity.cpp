@@ -138,23 +138,13 @@ void Entity::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const 
     vkCmdSetPrimitiveTopology(element->commandBuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     vkCmdSetPrimitiveRestartEnable(element->commandBuffer, false);
 
-    // Rasterization settings
-    vkCmdSetRasterizerDiscardEnable(element->commandBuffer, false);
-    vkCmdSetCullMode(element->commandBuffer, VK_CULL_MODE_NONE);
-    vkCmdSetPolygonModeEXT(element->commandBuffer, ctx->vkPolygonMode);
-    vkCmdSetDepthBiasEnable(element->commandBuffer, false);
-    vkCmdSetLineWidth(element->commandBuffer, 1.0f);
+   
 
     // Multisample settings
     vkCmdSetRasterizationSamplesEXT(element->commandBuffer, VK_SAMPLE_COUNT_1_BIT);
     VkSampleMask sampleMask = 1;
     vkCmdSetSampleMaskEXT(element->commandBuffer, VK_SAMPLE_COUNT_1_BIT, &sampleMask);
     vkCmdSetAlphaToCoverageEnableEXT(element->commandBuffer, false);
-
-    // Depth stencil stetings
-    vkCmdSetDepthWriteEnable(element->commandBuffer, false);
-    vkCmdSetDepthTestEnable(element->commandBuffer, false);
-    vkCmdSetStencilTestEnable(element->commandBuffer, false);
 
     // Color blend settings
     VkBool32 colorBlend = true;

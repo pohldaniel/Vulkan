@@ -42,36 +42,13 @@ void transition_image_layout(VkCommandBuffer commandBuffer, VkImage image,
 	VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask,
 	VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage) {
 
-	/*
-	typedef struct VkImageSubresourceRange {
-		VkImageAspectFlags    aspectMask;
-		uint32_t              baseMipLevel;
-		uint32_t              levelCount;
-		uint32_t              baseArrayLayer;
-		uint32_t              layerCount;
-	} VkImageSubresourceRange;
-	*/
 	VkImageSubresourceRange access;
 	access.aspectMask = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
 	access.baseMipLevel = 0;
 	access.levelCount = 1;
 	access.baseArrayLayer = 0;
 	access.layerCount = 1;
-
-	/*
-	typedef struct VkImageMemoryBarrier {
-		VkStructureType            sType;
-		const void* pNext;
-		VkAccessFlags              srcAccessMask;
-		VkAccessFlags              dstAccessMask;
-		VkImageLayout              oldLayout;
-		VkImageLayout              newLayout;
-		uint32_t                   srcQueueFamilyIndex;
-		uint32_t                   dstQueueFamilyIndex;
-		VkImage                    image;
-		VkImageSubresourceRange    subresourceRange;
-	} VkImageMemoryBarrier;
-	*/
+	
 	VkImageMemoryBarrier barrier = {};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
 	barrier.oldLayout = oldLayout;
@@ -80,16 +57,9 @@ void transition_image_layout(VkCommandBuffer commandBuffer, VkImage image,
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 	barrier.image = image;
 	barrier.subresourceRange = access;
-	//barrier.pNext = NULL;
-
-	//vk::PipelineStageFlags sourceStage, destinationStage;
-
 	barrier.srcAccessMask = srcAccessMask;
 	barrier.dstAccessMask = dstAccessMask;
 
-	//vk::CommandBuffer newCommandBuffer;
-	//newCommandBuffer.pipelineBarrier(
-		//srcStage, dstStage, vk::DependencyFlags(), nullptr, nullptr, barrier);
 
 	vkCmdPipelineBarrier(commandBuffer, srcStage, dstStage, 0, 0, 0, 0, 0, 1, &barrier);
 

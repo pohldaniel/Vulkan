@@ -40,11 +40,16 @@ public:
     std::vector<Entity*> entities;
 
 private:
+
     void prepareTexture();
     void imageToAttachmentLayout();
     void imageToPresentLayout();
 
+    void prepareDepthTexture();
+
     void createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView& vkImageView);
     void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
+
+    void transition_image_layout(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage);
 };

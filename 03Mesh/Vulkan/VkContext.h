@@ -26,9 +26,6 @@ struct VkContext {
     void createPipelineLayout(const VkDevice& vkDevice);
     void createSampler(const VkDevice& vkDevice);
   
-
-
-
     void createTextureView(const VkDevice& vkDevice);
     void resize();
     void createUniformBuffers(const VkDevice& vkDevice);
@@ -73,6 +70,7 @@ struct VkContext {
 
     Swapchain* swapchain;
     bool textureReady = false;
+    bool depthReady = false;
 
     VkPolygonMode vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
 };
