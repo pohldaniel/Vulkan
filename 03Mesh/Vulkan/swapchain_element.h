@@ -3,12 +3,12 @@
 #include "entity.h"
 
 class Swapchain;
-class VkContext;
+struct VkContext;
 
 class SwapchainElement
 {
 public:
-    SwapchainElement(Swapchain* swapchain, VkImage image);
+    SwapchainElement(Swapchain* swapchain, VkImage image, VkImage depthImage);
     SwapchainElement(const SwapchainElement& rhs) = delete;
     SwapchainElement(SwapchainElement&& rhs) = delete;
     ~SwapchainElement();
@@ -21,10 +21,15 @@ public:
     VkContext* ctx;
     Swapchain* swapchain;
 
+    VkCommandBuffer commandBuffer;
+
     VkImage image;
     VkImageView imageView;
-    VkFramebuffer framebuffer;
-    VkCommandBuffer commandBuffer;
+
+    VkImage depthImage;
+    VkImageView depthImageView;
+    //VkDeviceMemory depthImageMemory;
+
     VkSemaphore startSemaphore;
     VkSemaphore endSemaphore;
     VkFence fence;
@@ -33,23 +38,8 @@ public:
     VkDescriptorSet descriptorSet;
     int nextUniformIndex = 0;
 
-    VkImage depthImage;
-    VkImageView depthImageView;
-    VkDeviceMemory depthImageMemory;
+    
 
     std::vector<Entity*> entities;
 
-private:
-
-    void prepareTexture();
-    void imageToAttachmentLayout();
-    void imageToPresentLayout();
-
-    void prepareDepthTexture();
-
-    void createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, VkImageView& vkImageView);
-    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
-    void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
-
-    void transition_image_layout(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage);
 };

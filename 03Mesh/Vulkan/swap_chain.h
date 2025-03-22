@@ -3,7 +3,7 @@
 #include <Vulkan/vulkan.h>
 #include "swapchain_element.h"
 
-class VkContext;
+struct VkContext;
 
 class Swapchain{
 

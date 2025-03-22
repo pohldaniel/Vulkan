@@ -4,7 +4,7 @@
 #include "Data.h"
 
 class SwapchainElement;
-class VkContext;
+struct VkContext;
 
 #pragma pack(1)
 struct EntityUniform{

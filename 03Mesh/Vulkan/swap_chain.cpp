@@ -61,9 +61,12 @@ Swapchain::Swapchain(VkContext* ctx, unsigned width, unsigned height)
 
     std::vector<VkImage> images(imageCount);
     vkGetSwapchainImagesKHR(ctx->vkDevice, swapchain, &imageCount, images.data());
+    std::vector<VkImage> depthImages(imageCount);
+    std::vector<VkDeviceMemory> depthImagesMemory(imageCount);
 
-    for (VkImage image : images){
-        elements.push_back(new SwapchainElement(this, image));
+    for (uint32_t i = 0; i < imageCount; i++) {
+        vlkCreateImage(depthImages[i], depthImagesMemory[i], width, height, ctx->vkDepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        elements.push_back(new SwapchainElement(this, images[i], depthImages[i]));
     }
 }
 

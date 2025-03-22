@@ -105,36 +105,36 @@ void vlkDraw(VkContext& vkContext, const VkBuffer& vertex, const VkBuffer& index
     }
 }
 
-void vlkMapBuffer(const VkDeviceMemory& bufferMemory, const void* data, uint32_t size) {
+void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size) {
     const VkDevice& vkDevice = Application::VkContext.vkDevice;
 
     void* pMem = nullptr;
-    vkMapMemory(vkDevice, bufferMemory, 0, size, 0, &pMem);
+    vkMapMemory(vkDevice, vkDeviceMemory, 0, size, 0, &pMem);
     memcpy(pMem, data, size);
-    vkUnmapMemory(vkDevice, bufferMemory);
+    vkUnmapMemory(vkDevice, vkDeviceMemory);
 }
 
-void vlkCreateBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
+void vlkCreateBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, uint32_t size, VkBufferUsageFlags vkBufferUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags) {
     const VkDevice& vkDevice = Application::VkContext.vkDevice;
     
     VkBufferCreateInfo vkBufferCreateInfo = {};
     vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     vkBufferCreateInfo.size = size;
-    vkBufferCreateInfo.usage = usage;
+    vkBufferCreateInfo.usage = vkBufferUsageFlags;
     vkBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    vkCreateBuffer(vkDevice, &vkBufferCreateInfo, NULL, &buffer);
+    vkCreateBuffer(vkDevice, &vkBufferCreateInfo, NULL, &vkBuffer);
 
     VkMemoryRequirements vkMemoryRequirements;
-    vkGetBufferMemoryRequirements(vkDevice, buffer, &vkMemoryRequirements);
+    vkGetBufferMemoryRequirements(vkDevice, vkBuffer, &vkMemoryRequirements);
 
-    VkMemoryAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = vkMemoryRequirements.size;
-    allocInfo.memoryTypeIndex = Application::VkContext.GetMemoryTypeIndex(vkMemoryRequirements.memoryTypeBits, properties);
+    VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
+    vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    vkMemoryAllocateInfo.allocationSize = vkMemoryRequirements.size;
+    vkMemoryAllocateInfo.memoryTypeIndex = Application::VkContext.GetMemoryTypeIndex(vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags);
 
-    vkAllocateMemory(vkDevice, &allocInfo, NULL, &bufferMemory);
-    vkBindBufferMemory(vkDevice, buffer, bufferMemory, 0);
+    vkAllocateMemory(vkDevice, &vkMemoryAllocateInfo, NULL, &vkDeviceMemory);
+    vkBindBufferMemory(vkDevice, vkBuffer, vkDeviceMemory, 0);
 }
 
 void vlkCopyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size) {
@@ -155,19 +155,8 @@ void vlkCopyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_
 
     vkCmdCopyBuffer(vkCommandBuffer, srcBuffer, dstBuffer, 1, &vkBufferCopy);
     vkEndCommandBuffer(vkCommandBuffer);
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &vkCommandBuffer;
-    submitInfo.waitSemaphoreCount = 0;
-    submitInfo.pWaitSemaphores = VK_NULL_HANDLE;
-    submitInfo.pWaitDstStageMask = VK_NULL_HANDLE;
-    submitInfo.signalSemaphoreCount = 0;
-    submitInfo.pSignalSemaphores = VK_NULL_HANDLE;
-    submitInfo.pNext = NULL;
 
-    vkQueueSubmit(Application::VkContext.vkQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(Application::VkContext.vkQueue);
+    vlkQueueSubmit(vkCommandBuffer);
 }
 
 void vlkToggleWireframe() {
@@ -175,6 +164,132 @@ void vlkToggleWireframe() {
         Application::VkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_LINE;
     else
         Application::VkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
+}
+
+void vlkCreateImage(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, uint32_t width, uint32_t height, VkFormat vkFormat, VkImageTiling vkImageTiling, VkImageUsageFlags vkImageUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags) {
+    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+    
+    VkImageCreateInfo vkImageCreateInfo = {};
+    vkImageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    vkImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    vkImageCreateInfo.extent.width = width;
+    vkImageCreateInfo.extent.height = height;
+    vkImageCreateInfo.extent.depth = 1;
+    vkImageCreateInfo.mipLevels = 1;
+    vkImageCreateInfo.arrayLayers = 1;
+    vkImageCreateInfo.format = vkFormat;
+    vkImageCreateInfo.tiling = vkImageTiling;
+    vkImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    vkImageCreateInfo.usage = vkImageUsageFlags;
+    vkImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    vkImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    vkCreateImage(vkDevice, &vkImageCreateInfo, nullptr, &vkImage);
+
+    VkMemoryRequirements vkMemoryRequirements;
+    vkGetImageMemoryRequirements(vkDevice, vkImage, &vkMemoryRequirements);
+
+    VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
+    vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    vkMemoryAllocateInfo.allocationSize = vkMemoryRequirements.size;
+    vkMemoryAllocateInfo.memoryTypeIndex = Application::VkContext.findMemoryType(vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags);
+
+    vkAllocateMemory(vkDevice, &vkMemoryAllocateInfo, nullptr, &vkDeviceMemory);
+    vkBindImageMemory(vkDevice, vkImage, vkDeviceMemory, 0);
+}
+
+void vlkCreateImageView(VkImageView& vkImageView, const VkImage& vkImage, VkFormat vkFormat, VkImageAspectFlags vkImageAspectFlags, VkComponentMapping vkComponentMapping) {
+    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+    
+    VkImageViewCreateInfo vkImageViewCreateInfo = {};
+    vkImageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    vkImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    vkImageViewCreateInfo.image = vkImage;
+    vkImageViewCreateInfo.format = vkFormat;
+    vkImageViewCreateInfo.subresourceRange.aspectMask = vkImageAspectFlags;
+    vkImageViewCreateInfo.subresourceRange.baseMipLevel = 0;
+    vkImageViewCreateInfo.subresourceRange.levelCount = 1;
+    vkImageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
+    vkImageViewCreateInfo.subresourceRange.layerCount = 1;
+    vkImageViewCreateInfo.components = vkComponentMapping;
+    vkCreateImageView(vkDevice, &vkImageViewCreateInfo, nullptr, &vkImageView);
+}
+
+void vlkCreateCommandBuffer(VkCommandBuffer& vkCommandBuffer) {
+    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+    VkCommandBufferAllocateInfo vkCommandBufferAllocateInfo{};
+    vkCommandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    vkCommandBufferAllocateInfo.commandPool = Application::VkContext.vkCommandPool;
+    vkCommandBufferAllocateInfo.commandBufferCount = 1;
+    vkCommandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    vkAllocateCommandBuffers(vkDevice, &vkCommandBufferAllocateInfo, &vkCommandBuffer);
+}
+
+void vlkTransitionImageLayout(const VkCommandBuffer& commandBuffer, const VkImage& vkImage, VkImageAspectFlags vkImageAspectFlags, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage) {
+    VkImageSubresourceRange access;
+    access.aspectMask = vkImageAspectFlags;
+    access.baseMipLevel = 0;
+    access.levelCount = 1;
+    access.baseArrayLayer = 0;
+    access.layerCount = 1;
+
+    VkImageMemoryBarrier barrier = {};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = newLayout;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = vkImage;
+    barrier.subresourceRange = access;
+    barrier.srcAccessMask = srcAccessMask;
+    barrier.dstAccessMask = dstAccessMask;
+    vkCmdPipelineBarrier(commandBuffer, srcStage, dstStage, 0, 0, 0, 0, 0, 1, &barrier);
+}
+
+void vlkCreateSemaphore(VkSemaphore& vkSemaphore) {
+    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+
+    VkSemaphoreCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+    vkCreateSemaphore(vkDevice, &createInfo, nullptr, &vkSemaphore);
+}
+
+void vlkCreateFence(VkFence& vkFence) {
+    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+
+    VkFenceCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+    createInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+    vkCreateFence(vkDevice, &createInfo, nullptr, &vkFence);
+}
+
+void vlkBeginCommandBuffer(const VkCommandBuffer& vkCommandBuffer, VkCommandBufferUsageFlags vkCommandBufferUsageFlags) {
+    VkCommandBufferBeginInfo beginInfo = {};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = vkCommandBufferUsageFlags;
+    vkBeginCommandBuffer(vkCommandBuffer, &beginInfo);
+}
+
+void vlkEndCommandBuffer(const VkCommandBuffer& vkCommandBuffer) {
+    vkEndCommandBuffer(vkCommandBuffer);
+}
+
+void vlkQueueSubmit(const VkCommandBuffer& vkCommandBuffer) {
+    const VkQueue& vkQueue = Application::VkContext.vkQueue;
+
+    VkSubmitInfo vkSubmitInfo = {};
+    vkSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    vkSubmitInfo.commandBufferCount = 1;
+    vkSubmitInfo.pCommandBuffers = &vkCommandBuffer;
+    vkSubmitInfo.waitSemaphoreCount = 0;
+    vkSubmitInfo.pWaitSemaphores = VK_NULL_HANDLE;
+    vkSubmitInfo.pWaitDstStageMask = VK_NULL_HANDLE;
+    vkSubmitInfo.signalSemaphoreCount = 0;
+    vkSubmitInfo.pSignalSemaphores = VK_NULL_HANDLE;
+    vkSubmitInfo.pNext = NULL;
+
+    vkQueueSubmit(vkQueue, 1, &vkSubmitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(vkQueue);
 }
 
 bool VkContext::createVkDevice(VkContext& vkContext, void* window){
