@@ -1,5 +1,5 @@
 #include <iostream>
-#include "Vulkan/VkContext.h"
+#include "VlkContext.h"
 #include "swapchain_element.h"
 #include "swap_chain.h"
 
@@ -40,6 +40,47 @@ SwapchainElement::SwapchainElement(Swapchain* swapchain, VkImage image, VkImage 
         vkUpdateDescriptorSets(ctx->vkDevice, 1, &textureDescriptorWrite, 0, nullptr);
     }
 
+    {
+        colorAttachment = {};
+        colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+        colorAttachment.imageView = imageView;
+        colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+        colorAttachment.clearValue.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+
+
+        depthStencilAttachment = {};
+        depthStencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+        depthStencilAttachment.imageView = depthImageView;
+        //depthStencilAttachment.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
+        depthStencilAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        depthStencilAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
+        depthStencilAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depthStencilAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthStencilAttachment.clearValue.depthStencil.depth = 1.0f;
+        depthStencilAttachment.clearValue.depthStencil.stencil = 0;
+
+        renderingInfo = {};
+        renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+        renderingInfo.renderArea = { { 0, 0 },{ swapchain->width, swapchain->height } };
+        renderingInfo.layerCount = 1;
+        renderingInfo.colorAttachmentCount = 1;
+        renderingInfo.pColorAttachments = &colorAttachment;
+        renderingInfo.pDepthAttachment = &depthStencilAttachment;
+        renderingInfo.pStencilAttachment = &depthStencilAttachment;
+
+        viewport = {};
+        viewport.x = 0.0f;
+        viewport.y = static_cast<float>(swapchain->height);
+        viewport.width = static_cast<float>(swapchain->width);
+        viewport.height = -static_cast<float>(swapchain->height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+
+        scissor = { { 0, 0 },{ swapchain->width, swapchain->height } };
+    }
+
     entities.push_back(new Entity(this, 0.0f, 0.0f));
 }
 
@@ -78,50 +119,10 @@ void SwapchainElement::draw(const UniformBufferObject& ubo, const VkBuffer& vert
                              VK_ACCESS_NONE, VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
                              VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
       
-    // Begin rendering
-    VkRenderingAttachmentInfo colorAttachment{};
-    colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-    colorAttachment.imageView = imageView;
-    colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.clearValue.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
-
-   
-    VkRenderingAttachmentInfo depthStencilAttachment = {};
-    depthStencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-    depthStencilAttachment.imageView = depthImageView;
-    //depthStencilAttachment.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
-    depthStencilAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-    depthStencilAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
-    depthStencilAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthStencilAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthStencilAttachment.clearValue.depthStencil.depth = 1.0f;
-    depthStencilAttachment.clearValue.depthStencil.stencil = 0;
-
-   
-    VkRenderingInfo renderingInfo{};
-    renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-    renderingInfo.renderArea = {{ 0, 0 },{ swapchain->width, swapchain->height }};
-    renderingInfo.layerCount = 1;
-    renderingInfo.colorAttachmentCount = 1;
-    renderingInfo.pColorAttachments = &colorAttachment;
-    renderingInfo.pDepthAttachment = &depthStencilAttachment;
-    renderingInfo.pStencilAttachment = &depthStencilAttachment;
-
+    // Begin rendering   
     vkCmdBeginRendering(commandBuffer, &renderingInfo);
-
-    VkViewport viewport = {};
-    viewport.x = 0.0f; 
-    viewport.y = static_cast<float>(swapchain->height);
-    viewport.width = static_cast<float>(swapchain->width);
-    viewport.height = -static_cast<float>(swapchain->height);
-    viewport.minDepth = 0.0f;
-    viewport.maxDepth = 1.0f;
-
+  
     vkCmdSetViewportWithCount(commandBuffer, 1, &viewport);
-
-    VkRect2D scissor = {{ 0, 0 },{ swapchain->width, swapchain->height }};
     vkCmdSetScissorWithCount(commandBuffer, 1, &scissor);
     vkCmdSetPolygonModeEXT(commandBuffer, ctx->vkPolygonMode);
     vkCmdSetDepthWriteEnable(commandBuffer, VK_TRUE);
@@ -131,7 +132,7 @@ void SwapchainElement::draw(const UniformBufferObject& ubo, const VkBuffer& vert
     vkCmdSetRasterizerDiscardEnable(commandBuffer, false);
     vkCmdSetCullMode(commandBuffer, VK_CULL_MODE_NONE);
     vkCmdSetDepthBiasEnable(commandBuffer, false);
-    vkCmdSetLineWidth(commandBuffer, 1.0f);
+    vkCmdSetLineWidth(commandBuffer, 2.0f);
 
     // Bind global descriptor set
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 0, 1, &descriptorSet, 0, NULL);

@@ -5,9 +5,9 @@
 
 class Swapchain;
 
-struct VkContext {
+struct VlkContext {
 
-    bool createVkDevice(VkContext& vkcontext, void* window);
+    bool createVkDevice(VlkContext& vlkcontext, void* window);
     void createCommandPool();
     void createCommandBuffer();
     void copyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size);
@@ -73,20 +73,27 @@ struct VkContext {
     bool depthReady = false;
 
     VkPolygonMode vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
+    VkPresentModeKHR vkPresentModeKHR = VkPresentModeKHR::VK_PRESENT_MODE_IMMEDIATE_KHR;
 };
 
 extern "C" {
-    void vlkInit(VkContext& vkContext, void* window);
-    void vlkDraw(VkContext& vkContext, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
+    void vlkInit(VlkContext& vlkContext, void* window);
+    void vlkResize();
+    void vlkToggleVerticalSync();
+    void vlkToggleWireframe();
+    void vlkDraw(VlkContext& vlkContext, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
 
     void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size);
     void vlkCreateBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, uint32_t size, VkBufferUsageFlags vkBufferUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags);
     void vlkCopyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size);
-    void vlkToggleWireframe();
+   
 
     void vlkCreateImage(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, uint32_t width, uint32_t height, VkFormat vkFormat, VkImageTiling vkImageTiling, VkImageUsageFlags vkImageUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags);
     void vlkCreateImageView(VkImageView& vkImageView, const VkImage& vkImage, VkFormat vkFormat, VkImageAspectFlags vkImageAspectFlags, VkComponentMapping vkComponentMapping = {});
     
+    void vlkDestroyImage(const VkImage& vkImage, const VkDeviceMemory& vkDeviceMemory);
+
+
     void vlkCreateCommandBuffer(VkCommandBuffer& vkCommandBuffer);
     void vlkTransitionImageLayout(const VkCommandBuffer& commandBuffer, const VkImage& vkImage, VkImageAspectFlags vkImageAspectFlags, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage);  
     void vlkCreateSemaphore(VkSemaphore& vkSemaphore);
@@ -94,4 +101,6 @@ extern "C" {
     void vlkBeginCommandBuffer(const VkCommandBuffer& vkCommandBuffer, VkCommandBufferUsageFlags vkCommandBufferUsageFlags);
     void vlkEndCommandBuffer(const VkCommandBuffer& vkCommandBuffer);
     void vlkQueueSubmit(const VkCommandBuffer& vkCommandBuffer);
+
+    void vlkCreateSwapChain(VkSwapchainKHR& vkSwapchainKHR, VkFormat& vkFormat, uint32_t width, uint32_t height, const VkPresentModeKHR vkPresentModeKHR = VK_PRESENT_MODE_FIFO_KHR, VkSwapchainKHR vkOldSwapchainKHR = NULL);
 };

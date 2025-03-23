@@ -3,12 +3,12 @@
 #include <Vulkan/vulkan.h>
 #include "swapchain_element.h"
 
-struct VkContext;
+struct VlkContext;
 
 class Swapchain{
 
 public:
-    Swapchain(VkContext* ctx, unsigned width, unsigned height);
+    Swapchain(VlkContext* ctx, unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VkSwapchainKHR vkOldSwapchainKHR = NULL);
     Swapchain(const Swapchain& rhs) = delete;
     Swapchain(Swapchain&& rhs) = delete;
     ~Swapchain();
@@ -18,12 +18,17 @@ public:
 
     bool draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
 
-    VkContext* ctx;
+    VlkContext* ctx;
 
     VkSwapchainKHR swapchain;
     VkFormat format;
     unsigned width;
     unsigned height;
+    uint32_t imageCount;
+
+    std::vector<VkImage> depthImages;
+    std::vector<VkDeviceMemory> depthImagesMemory;
+    std::vector<VkImage> images;
 
 private:
     uint32_t currentFrame;

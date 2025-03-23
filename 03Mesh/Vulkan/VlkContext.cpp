@@ -2,9 +2,9 @@
 #include <vma/vk_mem_alloc.h>
 
 #include <iostream>
-#include "VkExtension.h"
+#include "VlkExtension.h"
 #include "Application.h"
-#include "VkContext.h"
+#include "VlkContext.h"
 #include "swap_chain.h"
 
 #define ArraySize(arr) sizeof((arr)) / sizeof((arr[0]))
@@ -71,42 +71,68 @@ char* platform_read_file2(const char* path, uint32_t* length) {
     return result;
 }
 
-void vlkInit(VkContext& vkContext, void* window) {
-    vkContext.createVkDevice(vkContext, window);
+void vlkInit(VlkContext& vlkContext, void* window) {
+    vlkContext.createVkDevice(vlkContext, window);
 	
-    vkGetDeviceQueue(vkContext.vkDevice, vkContext.queueFamilyIndex, 0, &vkContext.vkQueue);
-    vkContext.createCommandPool();
-    vkContext.createCommandBuffer();
+    vkGetDeviceQueue(vlkContext.vkDevice, vlkContext.queueFamilyIndex, 0, &vlkContext.vkQueue);
+    vlkContext.createCommandPool();
+    vlkContext.createCommandBuffer();
 
-    vkContext.createDescriptorPool(vkContext.vkDevice);
-    vkContext.createDescriptorSetLayout(vkContext.vkDevice);
-    vkContext.createPushConstantRange(vkContext.vkDevice);
-    vkContext.createPipelineLayout(vkContext.vkDevice);
+    vlkContext.createDescriptorPool(vlkContext.vkDevice);
+    vlkContext.createDescriptorSetLayout(vlkContext.vkDevice);
+    vlkContext.createPushConstantRange(vlkContext.vkDevice);
+    vlkContext.createPipelineLayout(vlkContext.vkDevice);
     
-    vkContext.createSampler(vkContext.vkDevice);
+    vlkContext.createSampler(vlkContext.vkDevice);
 
-    vkContext.createAllocator();
-    vkContext.createTexture();
-    vkContext.createTextureView(vkContext.vkDevice);
+    vlkContext.createAllocator();
+    vlkContext.createTexture();
+    vlkContext.createTextureView(vlkContext.vkDevice);
 
-    vkContext.createShaders(vkContext.vkDevice); 
-    vkContext.createMesh();
-    vkContext.resize();
-    //vkContext.createUniformBuffers(vkContext.vkDevice);
-    vkContext.swapchain = new Swapchain(&vkContext, Application::Width, Application::Height);
-    //vkContext.createPipeline(vkContext.vkDevice);
+    vlkContext.createShaders(vlkContext.vkDevice); 
+    vlkContext.createMesh();
+    vlkContext.resize();
+    //vlkContext.createUniformBuffers(vlkContext.vkDevice);
+    vlkContext.swapchain = new Swapchain(&vlkContext, Application::Width, Application::Height, Application::VlkContext.vkPresentModeKHR);
+    //vlkContext.createPipeline(vlkContext.vkDevice);
 }
 
-void vlkDraw(VkContext& vkContext, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount) {
-    bool shouldResize = vkContext.swapchain->draw(vkContext.ubo, vertex, index, drawCount);
+void vlkResize() {
+    const VkDevice& vkDevice = Application::VlkContext.vkDevice;
+    vkDeviceWaitIdle(vkDevice);
+    delete Application::VlkContext.swapchain;
+    Application::VlkContext.swapchain = new Swapchain(&Application::VlkContext, Application::Width, Application::Height, Application::VlkContext.vkPresentModeKHR);
+}
+
+void vlkToggleVerticalSync() {
+    if (Application::VlkContext.vkPresentModeKHR == VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR)
+        Application::VlkContext.vkPresentModeKHR = VkPresentModeKHR::VK_PRESENT_MODE_IMMEDIATE_KHR;
+    else
+        Application::VlkContext.vkPresentModeKHR = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
+
+    const VkDevice& vkDevice = Application::VlkContext.vkDevice;
+    vkDeviceWaitIdle(vkDevice);
+    delete Application::VlkContext.swapchain;
+    Application::VlkContext.swapchain = new Swapchain(&Application::VlkContext, Application::Width, Application::Height, Application::VlkContext.vkPresentModeKHR);
+}
+
+void vlkToggleWireframe() {
+    if (Application::VlkContext.vkPolygonMode == VkPolygonMode::VK_POLYGON_MODE_FILL)
+        Application::VlkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_LINE;
+    else
+        Application::VlkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
+}
+
+void vlkDraw(VlkContext& vlkContext, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount) {
+    bool shouldResize = vlkContext.swapchain->draw(vlkContext.ubo, vertex, index, drawCount);
 
     if (shouldResize){
-        vkContext.resize();
+        vlkContext.resize();
     }
 }
 
 void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size) {
-    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+    const VkDevice& vkDevice = Application::VlkContext.vkDevice;
 
     void* pMem = nullptr;
     vkMapMemory(vkDevice, vkDeviceMemory, 0, size, 0, &pMem);
@@ -115,7 +141,7 @@ void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32
 }
 
 void vlkCreateBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, uint32_t size, VkBufferUsageFlags vkBufferUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags) {
-    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+    const VkDevice& vkDevice = Application::VlkContext.vkDevice;
     
     VkBufferCreateInfo vkBufferCreateInfo = {};
     vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -131,14 +157,14 @@ void vlkCreateBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, uint32_
     VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
     vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     vkMemoryAllocateInfo.allocationSize = vkMemoryRequirements.size;
-    vkMemoryAllocateInfo.memoryTypeIndex = Application::VkContext.GetMemoryTypeIndex(vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags);
+    vkMemoryAllocateInfo.memoryTypeIndex = Application::VlkContext.GetMemoryTypeIndex(vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags);
 
     vkAllocateMemory(vkDevice, &vkMemoryAllocateInfo, NULL, &vkDeviceMemory);
     vkBindBufferMemory(vkDevice, vkBuffer, vkDeviceMemory, 0);
 }
 
 void vlkCopyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size) {
-    const VkCommandBuffer& vkCommandBuffer = Application::VkContext.vkCommandBuffer;
+    const VkCommandBuffer& vkCommandBuffer = Application::VlkContext.vkCommandBuffer;
 
     VkCommandBufferBeginInfo vkCommandBufferBeginInfo = {};
     vkCommandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -159,15 +185,8 @@ void vlkCopyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_
     vlkQueueSubmit(vkCommandBuffer);
 }
 
-void vlkToggleWireframe() {
-    if (Application::VkContext.vkPolygonMode == VkPolygonMode::VK_POLYGON_MODE_FILL)
-        Application::VkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_LINE;
-    else
-        Application::VkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
-}
-
 void vlkCreateImage(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, uint32_t width, uint32_t height, VkFormat vkFormat, VkImageTiling vkImageTiling, VkImageUsageFlags vkImageUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags) {
-    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+    const VkDevice& vkDevice = Application::VlkContext.vkDevice;
     
     VkImageCreateInfo vkImageCreateInfo = {};
     vkImageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -192,14 +211,14 @@ void vlkCreateImage(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, uint32_t w
     VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
     vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     vkMemoryAllocateInfo.allocationSize = vkMemoryRequirements.size;
-    vkMemoryAllocateInfo.memoryTypeIndex = Application::VkContext.findMemoryType(vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags);
+    vkMemoryAllocateInfo.memoryTypeIndex = Application::VlkContext.findMemoryType(vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags);
 
     vkAllocateMemory(vkDevice, &vkMemoryAllocateInfo, nullptr, &vkDeviceMemory);
     vkBindImageMemory(vkDevice, vkImage, vkDeviceMemory, 0);
 }
 
 void vlkCreateImageView(VkImageView& vkImageView, const VkImage& vkImage, VkFormat vkFormat, VkImageAspectFlags vkImageAspectFlags, VkComponentMapping vkComponentMapping) {
-    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+    const VkDevice& vkDevice = Application::VlkContext.vkDevice;
     
     VkImageViewCreateInfo vkImageViewCreateInfo = {};
     vkImageViewCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -212,14 +231,20 @@ void vlkCreateImageView(VkImageView& vkImageView, const VkImage& vkImage, VkForm
     vkImageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
     vkImageViewCreateInfo.subresourceRange.layerCount = 1;
     vkImageViewCreateInfo.components = vkComponentMapping;
-    vkCreateImageView(vkDevice, &vkImageViewCreateInfo, nullptr, &vkImageView);
+    vkCreateImageView(vkDevice, &vkImageViewCreateInfo, NULL, &vkImageView);
+}
+
+void vlkDestroyImage(const VkImage& vkImage, const VkDeviceMemory& vkDeviceMemory) {
+    const VkDevice& vkDevice = Application::VlkContext.vkDevice; 
+    vkFreeMemory(vkDevice, vkDeviceMemory, NULL);
+    vkDestroyImage(vkDevice, vkImage, NULL);
 }
 
 void vlkCreateCommandBuffer(VkCommandBuffer& vkCommandBuffer) {
-    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+    const VkDevice& vkDevice = Application::VlkContext.vkDevice;
     VkCommandBufferAllocateInfo vkCommandBufferAllocateInfo{};
     vkCommandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    vkCommandBufferAllocateInfo.commandPool = Application::VkContext.vkCommandPool;
+    vkCommandBufferAllocateInfo.commandPool = Application::VlkContext.vkCommandPool;
     vkCommandBufferAllocateInfo.commandBufferCount = 1;
     vkCommandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     vkAllocateCommandBuffers(vkDevice, &vkCommandBufferAllocateInfo, &vkCommandBuffer);
@@ -247,7 +272,7 @@ void vlkTransitionImageLayout(const VkCommandBuffer& commandBuffer, const VkImag
 }
 
 void vlkCreateSemaphore(VkSemaphore& vkSemaphore) {
-    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+    const VkDevice& vkDevice = Application::VlkContext.vkDevice;
 
     VkSemaphoreCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -255,7 +280,7 @@ void vlkCreateSemaphore(VkSemaphore& vkSemaphore) {
 }
 
 void vlkCreateFence(VkFence& vkFence) {
-    const VkDevice& vkDevice = Application::VkContext.vkDevice;
+    const VkDevice& vkDevice = Application::VlkContext.vkDevice;
 
     VkFenceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
@@ -275,7 +300,7 @@ void vlkEndCommandBuffer(const VkCommandBuffer& vkCommandBuffer) {
 }
 
 void vlkQueueSubmit(const VkCommandBuffer& vkCommandBuffer) {
-    const VkQueue& vkQueue = Application::VkContext.vkQueue;
+    const VkQueue& vkQueue = Application::VlkContext.vkQueue;
 
     VkSubmitInfo vkSubmitInfo = {};
     vkSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -292,7 +317,54 @@ void vlkQueueSubmit(const VkCommandBuffer& vkCommandBuffer) {
     vkQueueWaitIdle(vkQueue);
 }
 
-bool VkContext::createVkDevice(VkContext& vkContext, void* window){
+void vlkCreateSwapChain(VkSwapchainKHR& vkSwapchainKHR, VkFormat& vkFormat, uint32_t width, uint32_t height, const VkPresentModeKHR vkPresentModeKHR, VkSwapchainKHR vkOldSwapchainKHR) {
+    const VkDevice& vkDevice = Application::VlkContext.vkDevice;
+    const VkPhysicalDevice& vkPhysicalDevice = Application::VlkContext.vkPhysicalDevice;
+    const VkSurfaceKHR& vkSurfaceKHR = Application::VlkContext.vkSurfaceKHR;
+
+    VkSurfaceCapabilitiesKHR capabilities;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkPhysicalDevice, vkSurfaceKHR, &capabilities);
+
+    width = std::clamp(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
+    height = std::clamp(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
+
+    uint32_t formatCount;
+    vkGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice, vkSurfaceKHR, &formatCount, nullptr);
+
+    std::vector<VkSurfaceFormatKHR> formats(formatCount);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(vkPhysicalDevice, vkSurfaceKHR, &formatCount, formats.data());
+
+    VkSurfaceFormatKHR chosenFormat = formats[0];
+
+    for (const VkSurfaceFormatKHR& format : formats){
+        if (format.format == VK_FORMAT_B8G8R8A8_UNORM){
+            chosenFormat = format;
+            break;
+        }
+    }
+
+    vkFormat = chosenFormat.format;
+    
+    VkSwapchainCreateInfoKHR vkSwapchainCreateInfoKHR = {};
+    vkSwapchainCreateInfoKHR.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    vkSwapchainCreateInfoKHR.surface = vkSurfaceKHR;
+    vkSwapchainCreateInfoKHR.minImageCount = capabilities.minImageCount;
+    vkSwapchainCreateInfoKHR.imageFormat = chosenFormat.format;
+    vkSwapchainCreateInfoKHR.imageColorSpace = chosenFormat.colorSpace;
+    vkSwapchainCreateInfoKHR.imageExtent = { width, height };
+    vkSwapchainCreateInfoKHR.imageArrayLayers = 1;
+    vkSwapchainCreateInfoKHR.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    vkSwapchainCreateInfoKHR.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    vkSwapchainCreateInfoKHR.preTransform = capabilities.currentTransform;
+    vkSwapchainCreateInfoKHR.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+    vkSwapchainCreateInfoKHR.clipped = true;
+    vkSwapchainCreateInfoKHR.presentMode = vkPresentModeKHR;
+    //createInfo.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+    vkSwapchainCreateInfoKHR.oldSwapchain = vkOldSwapchainKHR;
+    vkCreateSwapchainKHR(vkDevice, &vkSwapchainCreateInfoKHR, nullptr, &vkSwapchainKHR);
+}
+
+bool VlkContext::createVkDevice(VlkContext& vlkContext, void* window){
 	/*uint32_t amountOfInstanceLayers = 0;
 	vkEnumerateInstanceLayerProperties(&amountOfInstanceLayers, NULL);
 	VkLayerProperties* instanceLayers = new VkLayerProperties[amountOfInstanceLayers];
@@ -321,8 +393,8 @@ bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 		std::cout << "Spec Version: " << instanceExtensions[i].specVersion << std::endl;
 	}*/
 
-	vkContext.screenSize.width = Application::Width;
-	vkContext.screenSize.height = Application::Height;
+	vlkContext.screenSize.width = Application::Width;
+	vlkContext.screenSize.height = Application::Height;
 
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -347,9 +419,9 @@ bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 	instanceInfo.enabledExtensionCount = ArraySize(instanceExtensionsList);
 	instanceInfo.ppEnabledLayerNames = instanceLayersList;
 	instanceInfo.enabledLayerCount = ArraySize(instanceLayersList);
-	VK_CHECK(vkCreateInstance(&instanceInfo, 0, &vkContext.vkInstance));
+	VK_CHECK(vkCreateInstance(&instanceInfo, 0, &vlkContext.vkInstance));
 
-    vkExtensionInit(vkContext.vkInstance);
+    vkExtensionInit(vlkContext.vkInstance);
 
 	VkDebugUtilsMessengerCreateInfoEXT debugInfo = {};
 	debugInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
@@ -357,22 +429,22 @@ bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 	debugInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
 	debugInfo.pfnUserCallback = vk_debug_callback;
 
-	vkCreateDebugUtilsMessengerEXT(vkContext.vkInstance, &debugInfo, 0, &vkDebugMessenger);
+	vkCreateDebugUtilsMessengerEXT(vlkContext.vkInstance, &debugInfo, 0, &vkDebugMessenger);
 
 	VkWin32SurfaceCreateInfoKHR surfaceInfo = {};
 	surfaceInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
 	surfaceInfo.hwnd = (HWND)window;
 	surfaceInfo.hinstance = GetModuleHandleA(0);
-	VK_CHECK(vkCreateWin32SurfaceKHR(vkContext.vkInstance, &surfaceInfo, 0, &vkContext.vkSurfaceKHR));
+	VK_CHECK(vkCreateWin32SurfaceKHR(vlkContext.vkInstance, &surfaceInfo, 0, &vlkContext.vkSurfaceKHR));
 
-	vkContext.queueFamilyIndex = 0;
+	vlkContext.queueFamilyIndex = 0;
 
 	uint32_t amountOfPhysicalDevices = 0;
 	//TODO: Suballocation from Main Allocation
 	//VkPhysicalDevice gpus[10];
-	VK_CHECK(vkEnumeratePhysicalDevices(vkContext.vkInstance, &amountOfPhysicalDevices, 0));
+	VK_CHECK(vkEnumeratePhysicalDevices(vlkContext.vkInstance, &amountOfPhysicalDevices, 0));
 	VkPhysicalDevice* vkPhysicalDevices = new VkPhysicalDevice[amountOfPhysicalDevices];
-	VK_CHECK(vkEnumeratePhysicalDevices(vkContext.vkInstance, &amountOfPhysicalDevices, vkPhysicalDevices));
+	VK_CHECK(vkEnumeratePhysicalDevices(vlkContext.vkInstance, &amountOfPhysicalDevices, vkPhysicalDevices));
 
 	for (uint32_t i = 0; i < amountOfPhysicalDevices; i++) {
 		VkPhysicalDevice vkPhysicalDevice = vkPhysicalDevices[i];
@@ -388,11 +460,11 @@ bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 		for (uint32_t j = 0; j < amountOfqueueFamilies; j++) {
 			if (vkQueueFamilyProperties[j].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 				VkBool32 surfaceSupport = VK_FALSE;
-				VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevice, j, vkContext.vkSurfaceKHR, &surfaceSupport));
+				VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(vkPhysicalDevice, j, vlkContext.vkSurfaceKHR, &surfaceSupport));
 
 				if (surfaceSupport) {
-					vkContext.queueFamilyIndex = j;
-					vkContext.vkPhysicalDevice = vkPhysicalDevice;
+					vlkContext.queueFamilyIndex = j;
+					vlkContext.vkPhysicalDevice = vkPhysicalDevice;
 					break;
 				}
 			}
@@ -402,9 +474,9 @@ bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 	delete[] vkPhysicalDevices;
 
 	/*uint32_t amountOfDeviceLayers = 0;
-	vkEnumerateDeviceLayerProperties(vkcontext->gpu, &amountOfDeviceLayers, NULL);
+	vkEnumerateDeviceLayerProperties(vlkcontext->gpu, &amountOfDeviceLayers, NULL);
 	VkLayerProperties* deviceLayers = new VkLayerProperties[amountOfDeviceLayers];
-	vkEnumerateDeviceLayerProperties(vkcontext->gpu, &amountOfDeviceLayers, deviceLayers);
+	vkEnumerateDeviceLayerProperties(vlkcontext->gpu, &amountOfDeviceLayers, deviceLayers);
 	std::cout << std::endl;
 	std::cout << "Amount of Device Layers: " << amountOfDeviceLayers << std::endl;
 
@@ -417,9 +489,9 @@ bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 	}
 
 	uint32_t amountOfDeviceExtensions = 0;
-	vkEnumerateDeviceExtensionProperties(vkcontext->gpu, NULL, &amountOfDeviceExtensions, NULL);
+	vkEnumerateDeviceExtensionProperties(vlkcontext->gpu, NULL, &amountOfDeviceExtensions, NULL);
 	VkExtensionProperties* deviceExtensions = new VkExtensionProperties[amountOfDeviceExtensions];
-	vkEnumerateDeviceExtensionProperties(vkcontext->gpu, NULL, &amountOfDeviceExtensions, deviceExtensions);
+	vkEnumerateDeviceExtensionProperties(vlkcontext->gpu, NULL, &amountOfDeviceExtensions, deviceExtensions);
 	std::cout << std::endl;
 	std::cout << "Amount of Device Extension: " << amountOfDeviceExtensions << std::endl;
 	std::cout << std::endl;
@@ -440,7 +512,7 @@ bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 
 	VkDeviceQueueCreateInfo queueInfo = {};
 	queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueInfo.queueFamilyIndex = vkContext.queueFamilyIndex;
+	queueInfo.queueFamilyIndex = vlkContext.queueFamilyIndex;
 	queueInfo.queueCount = 1;
 	queueInfo.pQueuePriorities = &queuePriority;
 
@@ -448,7 +520,7 @@ bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 	deviceFeatures.fillModeNonSolid = VK_TRUE;
 	deviceFeatures.shaderUniformBufferArrayDynamicIndexing = VK_TRUE;
 	deviceFeatures.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
-
+    deviceFeatures.wideLines = VK_TRUE;
 
 	VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRendering = {};
 	dynamicRendering.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
@@ -485,7 +557,7 @@ bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 	deviceInfo.pEnabledFeatures = NULL;
 	deviceInfo.pNext = &indexingFeatures;
 
-	vkCreateDevice(vkContext.vkPhysicalDevice, &deviceInfo, 0, &vkContext.vkDevice);
+	vkCreateDevice(vlkContext.vkPhysicalDevice, &deviceInfo, 0, &vlkContext.vkDevice);
 
     const VkFormat depthFormats[] = {
         VK_FORMAT_D32_SFLOAT,
@@ -499,7 +571,7 @@ bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 
     for (uint32_t i = 0; i < 3; i++) {
         VkFormatProperties properties;
-        vkGetPhysicalDeviceFormatProperties(vkContext.vkPhysicalDevice, depthFormats[i], &properties);
+        vkGetPhysicalDeviceFormatProperties(vlkContext.vkPhysicalDevice, depthFormats[i], &properties);
         if (tiling == VK_IMAGE_TILING_LINEAR && (properties.linearTilingFeatures & features) == features) {
             vkDepthFormat = depthFormats[i];
         }else if (tiling == VK_IMAGE_TILING_OPTIMAL && (properties.optimalTilingFeatures & features) == features) {
@@ -510,7 +582,7 @@ bool VkContext::createVkDevice(VkContext& vkContext, void* window){
 	return true;
 }
 
-void VkContext::resize(){
+void VlkContext::resize(){
 	/*VkResult result;
 
 	vkDeviceWaitIdle(logicalDevice);
@@ -519,7 +591,7 @@ void VkContext::resize(){
 	swapchain = new Swapchain(this, width, height);*/
 }
 
-void VkContext::createCommandPool() {
+void VlkContext::createCommandPool() {
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -527,7 +599,7 @@ void VkContext::createCommandPool() {
     vkCreateCommandPool(vkDevice, &poolInfo, 0, &vkCommandPool);
 }
 
-void VkContext::createCommandBuffer() {
+void VlkContext::createCommandBuffer() {
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
     allocInfo.commandPool = vkCommandPool;
@@ -537,35 +609,35 @@ void VkContext::createCommandBuffer() {
     vkAllocateCommandBuffers(vkDevice, &allocInfo, &vkCommandBuffer);
 }
 
-void VkContext::createBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
+void VlkContext::createBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
     VkBufferCreateInfo vkBufferCreateInfo = {};
     vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     vkBufferCreateInfo.size = size;
     vkBufferCreateInfo.usage = usage;
     vkBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    vkCreateBuffer(Application::VkContext.vkDevice, &vkBufferCreateInfo, NULL, &buffer);
+    vkCreateBuffer(Application::VlkContext.vkDevice, &vkBufferCreateInfo, NULL, &buffer);
 
     VkMemoryRequirements vkMemoryRequirements;
-    vkGetBufferMemoryRequirements(Application::VkContext.vkDevice, buffer, &vkMemoryRequirements);
+    vkGetBufferMemoryRequirements(Application::VlkContext.vkDevice, buffer, &vkMemoryRequirements);
 
     VkMemoryAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     allocInfo.allocationSize = vkMemoryRequirements.size;
-    allocInfo.memoryTypeIndex = Application::VkContext.GetMemoryTypeIndex(vkMemoryRequirements.memoryTypeBits, properties);
+    allocInfo.memoryTypeIndex = Application::VlkContext.GetMemoryTypeIndex(vkMemoryRequirements.memoryTypeBits, properties);
     
-    vkAllocateMemory(Application::VkContext.vkDevice, &allocInfo, NULL, &bufferMemory);
-    vkBindBufferMemory(Application::VkContext.vkDevice, buffer, bufferMemory, 0);
+    vkAllocateMemory(Application::VlkContext.vkDevice, &allocInfo, NULL, &bufferMemory);
+    vkBindBufferMemory(Application::VlkContext.vkDevice, buffer, bufferMemory, 0);
 }
 
-void VkContext::mapBuffer(const VkDeviceMemory& bufferMemory, const void* data, uint32_t size) {
+void VlkContext::mapBuffer(const VkDeviceMemory& bufferMemory, const void* data, uint32_t size) {
     void* pMem = nullptr;
-    vkMapMemory(Application::VkContext.vkDevice, bufferMemory, 0, size, 0, &pMem);
+    vkMapMemory(Application::VlkContext.vkDevice, bufferMemory, 0, size, 0, &pMem);
     memcpy(pMem, data, size);
-    vkUnmapMemory(Application::VkContext.vkDevice, bufferMemory);
+    vkUnmapMemory(Application::VlkContext.vkDevice, bufferMemory);
 }
 
-void VkContext::copyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size) {
+void VlkContext::copyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size) {
     VkCommandBufferBeginInfo vkCommandBufferBeginInfo = {};
     vkCommandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     vkCommandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
@@ -592,11 +664,11 @@ void VkContext::copyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer,
     submitInfo.pSignalSemaphores = VK_NULL_HANDLE;
     submitInfo.pNext = NULL;
 
-    vkQueueSubmit(Application::VkContext.vkQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(Application::VkContext.vkQueue);
+    vkQueueSubmit(Application::VlkContext.vkQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(Application::VlkContext.vkQueue);
 }
 
-void VkContext::createAllocator() {
+void VlkContext::createAllocator() {
     VkResult result;
 
     VmaAllocatorCreateInfo createInfo{};
@@ -607,7 +679,7 @@ void VkContext::createAllocator() {
     vmaCreateAllocator(&createInfo, &memoryAllocator);
 }
 
-void VkContext::createMesh() {
+void VlkContext::createMesh() {
     VkResult result;
 
     VkBufferCreateInfo createInfo{};
@@ -651,7 +723,7 @@ void VkContext::createMesh() {
     vmaUnmapMemory(memoryAllocator, vmaBuffer.allocation);
 }
 
-void VkContext::createTexture() {
+void VlkContext::createTexture() {
     VkResult result;
 
     static const int textureWidth = 8;
@@ -713,7 +785,7 @@ void VkContext::createTexture() {
     vmaUnmapMemory(memoryAllocator, vmaImage.allocation);
 }
 
-void VkContext::createDescriptorPool(const VkDevice& vkDevice) {
+void VlkContext::createDescriptorPool(const VkDevice& vkDevice) {
     VkResult result;
 
     VkDescriptorPoolSize poolSizes[] = {
@@ -731,7 +803,7 @@ void VkContext::createDescriptorPool(const VkDevice& vkDevice) {
     vkCreateDescriptorPool(vkDevice, &createInfo, nullptr, &descriptorPool);
 }
 
-void VkContext::createDescriptorSetLayout(const VkDevice& vkDevice) {
+void VlkContext::createDescriptorSetLayout(const VkDevice& vkDevice) {
     VkResult result;
 
     VkDescriptorSetLayoutBinding bindings[3]{};
@@ -770,13 +842,13 @@ void VkContext::createDescriptorSetLayout(const VkDevice& vkDevice) {
     vkCreateDescriptorSetLayout(vkDevice, &createInfo, nullptr, &descriptorSetLayout);
 }
 
-void VkContext::createPushConstantRange(const VkDevice& vkDevice) {
+void VlkContext::createPushConstantRange(const VkDevice& vkDevice) {
     pushConstantRange = VkPushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
     pushConstantRange.size = pushConstantRangeSize;
 }
 
-void VkContext::createPipelineLayout(const VkDevice& vkDevice) {
+void VlkContext::createPipelineLayout(const VkDevice& vkDevice) {
     VkResult result;
 
     VkPipelineLayoutCreateInfo createInfo{};
@@ -789,7 +861,7 @@ void VkContext::createPipelineLayout(const VkDevice& vkDevice) {
     vkCreatePipelineLayout(vkDevice, &createInfo, nullptr, &pipelineLayout);
 }
 
-void VkContext::createSampler(const VkDevice& vkDevice) {
+void VlkContext::createSampler(const VkDevice& vkDevice) {
     VkResult result;
 
     VkSamplerCreateInfo createInfo{};
@@ -802,7 +874,7 @@ void VkContext::createSampler(const VkDevice& vkDevice) {
     vkCreateSampler(vkDevice, &createInfo, nullptr, &sampler);
 }
 
-void VkContext::createShaders(const VkDevice& vkDevice){
+void VlkContext::createShaders(const VkDevice& vkDevice){
     std::vector<uint32_t> vertexCode, fragmentCode;
     uint32_t lengthInBytes;
     uint32_t* _vertexCode = (uint32_t*)platform_read_file2("vertex.spv", &lengthInBytes);
@@ -840,7 +912,7 @@ void VkContext::createShaders(const VkDevice& vkDevice){
     vkCreateShadersEXT(vkDevice, sizeof(createInfos) / sizeof(VkShaderCreateInfoEXT), createInfos, nullptr, shaders);
 }
 
-void VkContext::createTextureView(const VkDevice& vkDevice){
+void VlkContext::createTextureView(const VkDevice& vkDevice){
     VkResult result;
 
     VkImageViewCreateInfo createInfo = {};
@@ -862,7 +934,7 @@ void VkContext::createTextureView(const VkDevice& vkDevice){
 }
 
 
-void VkContext::createUniformBuffers(const VkDevice& vkDevice) {
+void VlkContext::createUniformBuffers(const VkDevice& vkDevice) {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
 
     vkBuffers.resize(MAX_FRAMES_IN_FLIGHT);
@@ -875,7 +947,7 @@ void VkContext::createUniformBuffers(const VkDevice& vkDevice) {
     }
 }
 
-void VkContext::createBuffer(const VkDevice& vkDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
+void VlkContext::createBuffer(const VkDevice& vkDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
@@ -901,7 +973,7 @@ void VkContext::createBuffer(const VkDevice& vkDevice, VkDeviceSize size, VkBuff
     vkBindBufferMemory(vkDevice, buffer, bufferMemory, 0);
 }
 
-uint32_t VkContext::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+uint32_t VlkContext::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(vkPhysicalDevice, &memProperties);
     
@@ -913,11 +985,11 @@ uint32_t VkContext::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags pr
     return 0;
 }
 
-void VkContext::updateUniformBuffer(const UniformBufferObject& ubo) {
+void VlkContext::updateUniformBuffer(const UniformBufferObject& ubo) {
     memcpy(vkBuffersMapped[0], &ubo, sizeof(ubo));
 }
 
-uint32_t VkContext::GetMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties) const{
+uint32_t VlkContext::GetMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties) const{
     VkPhysicalDeviceMemoryProperties vkPhysicalDeviceMemoryProperties;
     vkGetPhysicalDeviceMemoryProperties(vkPhysicalDevice, &vkPhysicalDeviceMemoryProperties);
 

@@ -3,66 +3,25 @@
 #include <iostream>
 #include <limits>
 #include "swap_chain.h"
-#include "Vulkan/VkContext.h"
+#include "VlkContext.h"
 
-Swapchain::Swapchain(VkContext* ctx, unsigned width, unsigned height)
+Swapchain::Swapchain(VlkContext* ctx, unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VkSwapchainKHR vkOldSwapchainKHR)
     : ctx(ctx)
     , width(width)
     , height(height)
     , currentFrame(0)
     , imageIndex(0)
+    , imageCount(0)
+    , swapchain(vkOldSwapchainKHR)
 {
-    VkResult result;
-
-    VkSurfaceCapabilitiesKHR capabilities;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(ctx->vkPhysicalDevice, ctx->vkSurfaceKHR, &capabilities);
-
-    width = std::clamp(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width);
-    height = std::clamp(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height);
-
-    uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(ctx->vkPhysicalDevice, ctx->vkSurfaceKHR, &formatCount, nullptr);
-
-    std::vector<VkSurfaceFormatKHR> formats(formatCount);
-    vkGetPhysicalDeviceSurfaceFormatsKHR(ctx->vkPhysicalDevice, ctx->vkSurfaceKHR, &formatCount, formats.data());
-
-    VkSurfaceFormatKHR chosenFormat = formats[0];
-
-    for (const VkSurfaceFormatKHR& format : formats)
-    {
-        if (format.format == VK_FORMAT_B8G8R8A8_UNORM)
-        {
-            chosenFormat = format;
-            break;
-        }
-    }
-
-    format = chosenFormat.format;
-
-    VkSwapchainCreateInfoKHR createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.surface = ctx->vkSurfaceKHR;
-    createInfo.minImageCount = capabilities.minImageCount;
-    createInfo.imageFormat = chosenFormat.format;
-    createInfo.imageColorSpace = chosenFormat.colorSpace;
-    createInfo.imageExtent = { width, height };
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    createInfo.preTransform = capabilities.currentTransform;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-    createInfo.clipped = true;
-
-    vkCreateSwapchainKHR(ctx->vkDevice, &createInfo, nullptr, &swapchain);
-
-    uint32_t imageCount;
-    vkGetSwapchainImagesKHR(ctx->vkDevice, swapchain, &imageCount, nullptr);
-
-    std::vector<VkImage> images(imageCount);
+    
+    vlkCreateSwapChain(swapchain, format, width, height, vkPresentModeKHR, swapchain);
+    vkGetSwapchainImagesKHR(ctx->vkDevice, swapchain, &imageCount, VK_NULL_HANDLE);
+    images.resize(imageCount);
     vkGetSwapchainImagesKHR(ctx->vkDevice, swapchain, &imageCount, images.data());
-    std::vector<VkImage> depthImages(imageCount);
-    std::vector<VkDeviceMemory> depthImagesMemory(imageCount);
+
+    depthImages.reserve(imageCount);
+    depthImagesMemory.reserve(imageCount);
 
     for (uint32_t i = 0; i < imageCount; i++) {
         vlkCreateImage(depthImages[i], depthImagesMemory[i], width, height, ctx->vkDepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -75,7 +34,13 @@ Swapchain::~Swapchain(){
         delete element;
     }
     elements.clear();
-    vkDestroySwapchainKHR(ctx->vkDevice, swapchain, nullptr);
+    vkDestroySwapchainKHR(ctx->vkDevice, swapchain, VK_NULL_HANDLE);
+
+    for (uint32_t i = 0; i < imageCount; i++) {
+        vlkDestroyImage(depthImages[i], depthImagesMemory[i]);
+    }
+    depthImages.clear();
+    depthImagesMemory.clear();
 }
 
 bool Swapchain::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount){

@@ -4,7 +4,7 @@
 
 #include "Application.h"
 #include "Globals.h"
-#include "Vulkan/VkExtension.h"
+#include "Vulkan/VlkExtension.h"
 
 EventDispatcher& Application::EventDispatcher = EventDispatcher::Get();
 StateMachine* Application::Machine = nullptr;
@@ -17,7 +17,7 @@ bool Application::Init = false;
 DWORD Application::SavedExStyle;
 DWORD Application::SavedStyle;
 RECT Application::Savedrc;
-VkContext Application::VkContext = {};
+VlkContext Application::VlkContext = {};
 
 VkInstance instance = nullptr;
 
@@ -185,7 +185,7 @@ LRESULT Application::ApplicationWndProc(HWND hWnd, UINT message, WPARAM wParam, 
 }
 
 void Application::initVulkan() {
-	vlkInit(VkContext, Window);
+	vlkInit(VlkContext, Window);
 }
 
 const HWND& Application::GetWindow() {
@@ -336,6 +336,9 @@ void Application::processEvent(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 		case 'z': case 'Z': {
 			vlkToggleWireframe();
 			break;
+		}case 'v': case 'V': {
+			vlkToggleVerticalSync();
+			break;
 		}
 #endif
 		}
@@ -425,21 +428,8 @@ void Application::processEvent(HWND hWnd, UINT message, WPARAM wParam, LPARAM lP
 }
 
 void Application::Resize(int deltaW, int deltaH) {
-	//glViewport(0, 0, Width, Height);
 	if (Init) {
-		/*Framebuffer::SetDefaultSize(Width, Height);
-		Widget::Resize(Width, Height);
-
-		auto shader = Globals::shaderManager.getAssetPointer("font");
-		shader->use();
-		shader->loadMatrix("u_transform", Matrix4f::Orthographic(0.0f, static_cast<float>(Width), 0.0f, static_cast<float>(Height), -1.0f, 1.0f));
-		shader->unuse();
-
-		shader = Globals::shaderManager.getAssetPointer("batch");
-		shader->use();
-		shader->loadMatrix("u_transform", Matrix4f::Orthographic(0.0f, static_cast<float>(Width), 0.0f, static_cast<float>(Height), -1.0f, 1.0f));
-		shader->unuse();*/
-		
+		vlkResize();
 		Machine->getStates().top()->resize(deltaW, deltaH);
 	}
 }

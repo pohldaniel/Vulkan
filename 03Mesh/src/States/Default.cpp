@@ -1,5 +1,5 @@
 #include <vulkan/vulkan.h>
-#include "Vulkan/VkContext.h"
+#include "Vulkan/VlkContext.h"
 
 #include "Default.h"
 #include "Application.h"
@@ -97,13 +97,13 @@ void Default::update() {
 		}
 	}
 
-	Application::VkContext.ubo.proj = m_camera.getPerspectiveMatrix();
-	Application::VkContext.ubo.view = m_camera.getViewMatrix();
-	Application::VkContext.ubo.model = glm::mat4(1.0f);
+	Application::VlkContext.ubo.proj = m_camera.getPerspectiveMatrix();
+	Application::VlkContext.ubo.view = m_camera.getViewMatrix();
+	Application::VlkContext.ubo.model = glm::mat4(1.0f);
 }
 
 void Default::render() {
-	vlkDraw(Application::VkContext, m_dstVertexBuffer, m_dstIndexBuffer, static_cast<uint32_t>(m_model.getIndexBuffer().size()));
+	vlkDraw(Application::VlkContext, m_dstVertexBuffer, m_dstIndexBuffer, static_cast<uint32_t>(m_model.getIndexBuffer().size()));
 }
 
 void Default::OnMouseMotion(Event::MouseMoveEvent& event) {

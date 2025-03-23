@@ -4,7 +4,7 @@
 #include "Data.h"
 
 class SwapchainElement;
-struct VkContext;
+struct VlkContext;
 
 #pragma pack(1)
 struct EntityUniform{
@@ -30,7 +30,7 @@ public:
 
     void draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
 
-    VkContext* ctx;
+    VlkContext* ctx;
     SwapchainElement* element;
 
     VmaBuffer uniform;

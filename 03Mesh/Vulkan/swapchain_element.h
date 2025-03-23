@@ -3,7 +3,7 @@
 #include "entity.h"
 
 class Swapchain;
-struct VkContext;
+struct VlkContext;
 
 class SwapchainElement
 {
@@ -18,7 +18,7 @@ public:
 
     void draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
 
-    VkContext* ctx;
+    VlkContext* ctx;
     Swapchain* swapchain;
 
     VkCommandBuffer commandBuffer;
@@ -38,7 +38,11 @@ public:
     VkDescriptorSet descriptorSet;
     int nextUniformIndex = 0;
 
-    
+    VkRenderingAttachmentInfo colorAttachment;
+    VkRenderingAttachmentInfo depthStencilAttachment;
+    VkRenderingInfo renderingInfo;
+    VkViewport viewport;
+    VkRect2D scissor;
 
     std::vector<Entity*> entities;
 

@@ -5,7 +5,7 @@
 #include <engine/input/Keyboard.h>
 #include <engine/input/Mouse.h>
 #include <States/StateMachine.h>
-#include "Vulkan/VkContext.h"
+#include "Vulkan/VlkContext.h"
 
 class Application {
 
@@ -27,7 +27,7 @@ public:
 
 	static int Width;
 	static int Height;
-	static VkContext VkContext;
+	static VlkContext VlkContext;
 
 private:
 

@@ -1,7 +1,7 @@
 #include "swapchain_element.h"
 #include "swap_chain.h"
-#include "VkContext.h"
-#include "VkExtension.h"
+#include "VlkContext.h"
+#include "VlkExtension.h"
 #include "entity.h"
 
 Entity::Entity(SwapchainElement* element, float x, float y)
