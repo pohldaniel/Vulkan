@@ -1,21 +1,18 @@
-#define NOMINMAX
-#include <algorithm>
 #include <iostream>
-#include <limits>
-#include "swap_chain.h"
+#include "VlkSwapchain.h"
 #include "VlkContext.h"
 
-Swapchain::Swapchain(VlkContext* ctx, unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VkSwapchainKHR vkOldSwapchainKHR)
+VlkSwapchain::VlkSwapchain(VlkContext* ctx, unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VkSwapchainKHR vkOldSwapchainKHR)
     : ctx(ctx)
     , width(width)
     , height(height)
     , currentFrame(0)
     , imageIndex(0)
     , imageCount(0)
-    , swapchain(vkOldSwapchainKHR)
+    , swapchain(VK_NULL_HANDLE)
 {
     
-    vlkCreateSwapChain(swapchain, format, width, height, vkPresentModeKHR, swapchain);
+    vlkCreateSwapChain(swapchain, format, width, height, vkPresentModeKHR, vkOldSwapchainKHR);
     vkGetSwapchainImagesKHR(ctx->vkDevice, swapchain, &imageCount, VK_NULL_HANDLE);
     images.resize(imageCount);
     vkGetSwapchainImagesKHR(ctx->vkDevice, swapchain, &imageCount, images.data());
@@ -25,28 +22,25 @@ Swapchain::Swapchain(VlkContext* ctx, unsigned width, unsigned height, const VkP
 
     for (uint32_t i = 0; i < imageCount; i++) {
         vlkCreateImage(depthImages[i], depthImagesMemory[i], width, height, ctx->vkDepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-        elements.push_back(new SwapchainElement(this, images[i], depthImages[i]));
+        elements.push_back(new VlkSwapchainElement(this, images[i], depthImages[i]));
     }
 }
 
-Swapchain::~Swapchain(){
-    for (SwapchainElement* element : elements){
+VlkSwapchain::~VlkSwapchain(){
+    for (VlkSwapchainElement* element : elements){
         delete element;
     }
-    elements.clear();
-    vkDestroySwapchainKHR(ctx->vkDevice, swapchain, VK_NULL_HANDLE);
 
     for (uint32_t i = 0; i < imageCount; i++) {
         vlkDestroyImage(depthImages[i], depthImagesMemory[i]);
     }
-    depthImages.clear();
-    depthImagesMemory.clear();
+    vkDestroySwapchainKHR(ctx->vkDevice, swapchain, VK_NULL_HANDLE);
 }
 
-bool Swapchain::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount){
+bool VlkSwapchain::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount){
     VkResult result;
 
-    const SwapchainElement* currentElement = elements.at(currentFrame);
+    const VlkSwapchainElement* currentElement = elements.at(currentFrame);
 
     vkWaitForFences(ctx->vkDevice, 1, &currentElement->fence, true, std::numeric_limits<uint64_t>::max());
 
@@ -68,7 +62,7 @@ bool Swapchain::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, con
         std::cerr << "Failure running 'vkAcquireNextImageKHR': " << result << std::endl;
     }
 
-    SwapchainElement* element = elements.at(imageIndex);
+    VlkSwapchainElement* element = elements.at(imageIndex);
 
     if (element->lastFence)
     {

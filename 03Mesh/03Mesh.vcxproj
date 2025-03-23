@@ -38,10 +38,10 @@
     <ClInclude Include="src\States\StateMachine.h" />
     <ClInclude Include="Vulkan\Data.h" />
     <ClInclude Include="Vulkan\entity.h" />
-    <ClInclude Include="Vulkan\swapchain_element.h" />
-    <ClInclude Include="Vulkan\swap_chain.h" />
     <ClInclude Include="Vulkan\VlkContext.h" />
     <ClInclude Include="Vulkan\VlkExtension.h" />
+    <ClInclude Include="Vulkan\VlkSwapchain.h" />
+    <ClInclude Include="Vulkan\VlkSwapchainElement.h" />
     <ClInclude Include="Vulkan\VlkTexture.h" />
   </ItemGroup>
   <ItemGroup>
@@ -59,10 +59,10 @@
     <ClCompile Include="src\States\Default.cpp" />
     <ClCompile Include="src\States\StateMachine.cpp" />
     <ClCompile Include="Vulkan\entity.cpp" />
-    <ClCompile Include="Vulkan\swapchain_element.cpp" />
-    <ClCompile Include="Vulkan\swap_chain.cpp" />
     <ClCompile Include="Vulkan\VlkContext.cpp" />
     <ClCompile Include="Vulkan\VlkExtension.cpp" />
+    <ClCompile Include="Vulkan\VlkSwapchain.cpp" />
+    <ClCompile Include="Vulkan\VlkSwapchainElement.cpp" />
     <ClCompile Include="Vulkan\VlkTexture.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

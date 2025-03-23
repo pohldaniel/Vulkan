@@ -17,7 +17,7 @@ bool Application::Init = false;
 DWORD Application::SavedExStyle;
 DWORD Application::SavedStyle;
 RECT Application::Savedrc;
-VlkContext Application::VlkContext = {};
+//VlkContext Application::VlkContext = {};
 
 VkInstance instance = nullptr;
 
@@ -31,7 +31,7 @@ Application::Application(const float& dt, const float& fdt) : m_dt(dt), m_fdt(fd
 	createWindow();	
 	showWindow();
 	initVulkan();
-
+	
 	EventDispatcher.setProcessOSEvents([&]() {
 		while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
 			if (msg.message == WM_QUIT) return false;
@@ -185,7 +185,7 @@ LRESULT Application::ApplicationWndProc(HWND hWnd, UINT message, WPARAM wParam, 
 }
 
 void Application::initVulkan() {
-	vlkInit(VlkContext, Window);
+	vlkInit(Window);
 }
 
 const HWND& Application::GetWindow() {

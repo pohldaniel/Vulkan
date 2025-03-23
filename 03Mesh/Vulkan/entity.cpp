@@ -1,10 +1,10 @@
-#include "swapchain_element.h"
-#include "swap_chain.h"
-#include "VlkContext.h"
 #include "VlkExtension.h"
+#include "VlkContext.h"
+#include "VlkSwapchain.h"
+#include "VlkSwapchainElement.h"
 #include "entity.h"
 
-Entity::Entity(SwapchainElement* element, float x, float y)
+Entity::Entity(VlkSwapchainElement* element, float x, float y)
     : ctx(element->ctx)
     , element(element)
     , descriptorIndex(element->nextUniformIndex++)

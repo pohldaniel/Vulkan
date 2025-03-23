@@ -1,9 +1,10 @@
 #include <iostream>
 #include "VlkContext.h"
-#include "swapchain_element.h"
-#include "swap_chain.h"
+#include "VlkSwapchain.h"
+#include "VlkSwapchainElement.h"
 
-SwapchainElement::SwapchainElement(Swapchain* swapchain, VkImage image, VkImage depthImage) : ctx(swapchain->ctx), image(image), depthImage(depthImage), swapchain(swapchain){
+
+VlkSwapchainElement::VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image, VkImage depthImage) : ctx(swapchain->ctx), image(image), depthImage(depthImage), swapchain(swapchain){
 
     vlkCreateCommandBuffer(commandBuffer);
     vlkCreateSemaphore(startSemaphore);
@@ -53,7 +54,6 @@ SwapchainElement::SwapchainElement(Swapchain* swapchain, VkImage image, VkImage 
         depthStencilAttachment = {};
         depthStencilAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
         depthStencilAttachment.imageView = depthImageView;
-        //depthStencilAttachment.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
         depthStencilAttachment.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         depthStencilAttachment.resolveMode = VK_RESOLVE_MODE_NONE;
         depthStencilAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -84,7 +84,7 @@ SwapchainElement::SwapchainElement(Swapchain* swapchain, VkImage image, VkImage 
     entities.push_back(new Entity(this, 0.0f, 0.0f));
 }
 
-SwapchainElement::~SwapchainElement(){
+VlkSwapchainElement::~VlkSwapchainElement(){
     for (Entity* entity : entities){
         delete entity;
     }
@@ -98,7 +98,7 @@ SwapchainElement::~SwapchainElement(){
     vkFreeDescriptorSets(ctx->vkDevice, ctx->descriptorPool, 1, &descriptorSet);
 }
 
-void SwapchainElement::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount){
+void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount){
     vlkBeginCommandBuffer(commandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
     if (!ctx->textureReady) {

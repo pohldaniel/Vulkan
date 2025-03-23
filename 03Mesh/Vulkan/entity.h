@@ -3,7 +3,7 @@
 
 #include "Data.h"
 
-class SwapchainElement;
+class VlkSwapchainElement;
 struct VlkContext;
 
 #pragma pack(1)
@@ -19,7 +19,7 @@ struct EntityUniform{
 class Entity
 {
 public:
-    Entity(SwapchainElement* element, float x, float y);
+    Entity(VlkSwapchainElement* element, float x, float y);
     Entity(const Entity& rhs) = delete;
     Entity(Entity&& rhs) = delete;
     ~Entity();
@@ -31,7 +31,7 @@ public:
     void draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
 
     VlkContext* ctx;
-    SwapchainElement* element;
+    VlkSwapchainElement* element;
 
     VmaBuffer uniform;
     EntityUniform* uniformMapping;

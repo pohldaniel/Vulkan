@@ -97,13 +97,13 @@ void Default::update() {
 		}
 	}
 
-	Application::VlkContext.ubo.proj = m_camera.getPerspectiveMatrix();
-	Application::VlkContext.ubo.view = m_camera.getViewMatrix();
-	Application::VlkContext.ubo.model = glm::mat4(1.0f);
+	vlkContext.ubo.proj = m_camera.getPerspectiveMatrix();
+	vlkContext.ubo.view = m_camera.getViewMatrix();
+	vlkContext.ubo.model = glm::mat4(1.0f);
 }
 
 void Default::render() {
-	vlkDraw(Application::VlkContext, m_dstVertexBuffer, m_dstIndexBuffer, static_cast<uint32_t>(m_model.getIndexBuffer().size()));
+	vlkDraw(m_dstVertexBuffer, m_dstIndexBuffer, static_cast<uint32_t>(m_model.getIndexBuffer().size()));
 }
 
 void Default::OnMouseMotion(Event::MouseMoveEvent& event) {
@@ -137,5 +137,6 @@ void Default::OnKeyUp(Event::KeyboardEvent& event) {
 }
 
 void Default::resize(int deltaW, int deltaH) {
-	
+	m_camera.perspective(45.0f, static_cast<float>(Application::Width) / static_cast<float>(Application::Height), 0.1f, 1000.0f);
+	m_camera.orthographic(0.0f, static_cast<float>(Application::Width), 0.0f, static_cast<float>(Application::Height), -1.0f, 1.0f);
 }

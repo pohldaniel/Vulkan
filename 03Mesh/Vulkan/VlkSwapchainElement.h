@@ -2,24 +2,24 @@
 #include <vector>
 #include "entity.h"
 
-class Swapchain;
+class VlkSwapchain;
 struct VlkContext;
 
-class SwapchainElement
+class VlkSwapchainElement
 {
 public:
-    SwapchainElement(Swapchain* swapchain, VkImage image, VkImage depthImage);
-    SwapchainElement(const SwapchainElement& rhs) = delete;
-    SwapchainElement(SwapchainElement&& rhs) = delete;
-    ~SwapchainElement();
+    VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image, VkImage depthImage);
+    VlkSwapchainElement(const VlkSwapchainElement& rhs) = delete;
+    VlkSwapchainElement(VlkSwapchainElement&& rhs) = delete;
+    ~VlkSwapchainElement();
 
-    SwapchainElement& operator=(const SwapchainElement& rhs) = delete;
-    SwapchainElement& operator=(SwapchainElement&& rhs) = delete;
+    VlkSwapchainElement& operator=(const VlkSwapchainElement& rhs) = delete;
+    VlkSwapchainElement& operator=(VlkSwapchainElement&& rhs) = delete;
 
     void draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
 
     VlkContext* ctx;
-    Swapchain* swapchain;
+    VlkSwapchain* swapchain;
 
     VkCommandBuffer commandBuffer;
 

@@ -27,7 +27,7 @@ public:
 
 	static int Width;
 	static int Height;
-	static VlkContext VlkContext;
+	//static VlkContext VlkContext;
 
 private:
 
