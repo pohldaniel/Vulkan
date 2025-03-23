@@ -6,6 +6,7 @@
 #include "VlkExtension.h"
 #include "VlkContext.h"
 #include "VlkSwapchain.h"
+#include "VlkShader.h"
 
 VlkContext vlkContext;
 
@@ -889,41 +890,15 @@ void VlkContext::createSampler(const VkDevice& vkDevice) {
 }
 
 void VlkContext::createShaders(const VkDevice& vkDevice){
+  
+
     std::vector<uint32_t> vertexCode, fragmentCode;
-    uint32_t lengthInBytes;
-    uint32_t* _vertexCode = (uint32_t*)platform_read_file2("vertex.spv", &lengthInBytes);
-    vertexCode = std::vector<uint32_t>(_vertexCode, _vertexCode + lengthInBytes / sizeof(uint32_t));
-    uint32_t* _fragmentCode = (uint32_t*)platform_read_file2("fragment.spv", &lengthInBytes);
-    fragmentCode = std::vector<uint32_t>(_fragmentCode, _fragmentCode + lengthInBytes / sizeof(uint32_t));
-
-    VkShaderCreateInfoEXT createInfos[2]{};
-
-    createInfos[0].sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
-    createInfos[0].flags = VK_SHADER_CREATE_LINK_STAGE_BIT_EXT;
-    createInfos[0].codeType = VK_SHADER_CODE_TYPE_SPIRV_EXT;
-    createInfos[0].pName = "main";
-    createInfos[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    createInfos[0].nextStage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    createInfos[0].codeSize = sizeof(uint32_t) * vertexCode.size();
-    createInfos[0].pCode = vertexCode.data();
-    createInfos[0].setLayoutCount = 1;
-    createInfos[0].pSetLayouts = &descriptorSetLayout;
-    createInfos[0].pushConstantRangeCount = 1;
-    createInfos[0].pPushConstantRanges = &pushConstantRange;
-
-    createInfos[1].sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
-    createInfos[1].flags = VK_SHADER_CREATE_LINK_STAGE_BIT_EXT;
-    createInfos[1].codeType = VK_SHADER_CODE_TYPE_SPIRV_EXT;
-    createInfos[1].pName = "main";
-    createInfos[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    createInfos[1].codeSize = sizeof(uint32_t) * fragmentCode.size();
-    createInfos[1].pCode = fragmentCode.data();
-    createInfos[1].setLayoutCount = 1;
-    createInfos[1].pSetLayouts = &descriptorSetLayout;
-    createInfos[1].pushConstantRangeCount = 1;
-    createInfos[1].pPushConstantRanges = &pushConstantRange;
-
-    vkCreateShadersEXT(vkDevice, sizeof(createInfos) / sizeof(VkShaderCreateInfoEXT), createInfos, nullptr, shaders);
+    VlkShader shader;
+    std::vector<VkShaderEXT> _shaders = shader.make_shader_objects(vkInstance, vkDevice, "mesh", vertexCode, fragmentCode, descriptorSetLayout, pushConstantRange, true);
+    shaders[0] = _shaders[0];
+    shaders[1] = _shaders[1];
+   
+   
 }
 
 void VlkContext::createTextureView(const VkDevice& vkDevice){

@@ -10,7 +10,7 @@ layout(push_constant, std430) uniform PushConstants {
     int textureID;
 };
 
-layout(binding = 1) uniform sampler2D textures[];
+layout(binding = 2) uniform sampler2D textures[];
 
 void main()
 {

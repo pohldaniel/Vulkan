@@ -3,6 +3,7 @@
 
 layout(location = 0) in vec3 position;
 layout(location = 1) in vec2 uv;
+layout(location = 2) in vec3 normal;
 
 layout(location = 0) out vec2 fragUV;
 
@@ -42,6 +43,6 @@ void main()
     float scale = buffers[bufferID].scale;
     vec3 aspect = vec3(1, buffers[bufferID].aspect, 1);
 
-    gl_Position = vec4((offset + rotate(position, rotation) * scale) * aspect, 1);
+    gl_Position = ubo.proj * ubo.view * ubo.model * vec4(position, 1);
     fragUV = uv;
 }
