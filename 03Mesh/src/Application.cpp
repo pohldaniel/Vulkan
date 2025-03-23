@@ -5,6 +5,9 @@
 #include "Application.h"
 #include "Globals.h"
 #include "Vulkan/VlkExtension.h"
+#include "Vulkan/VlkSwapchain.h"
+
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 EventDispatcher& Application::EventDispatcher = EventDispatcher::Get();
 StateMachine* Application::Machine = nullptr;
@@ -31,7 +34,8 @@ Application::Application(const float& dt, const float& fdt) : m_dt(dt), m_fdt(fd
 	createWindow();	
 	showWindow();
 	initVulkan();
-	
+	initImGUI();
+
 	EventDispatcher.setProcessOSEvents([&]() {
 		while (PeekMessage(&msg, nullptr, 0, 0, PM_REMOVE)) {
 			if (msg.message == WM_QUIT) return false;
@@ -47,6 +51,9 @@ Application::Application(const float& dt, const float& fdt) : m_dt(dt), m_fdt(fd
 }
 Application::~Application() {	
 	delete Machine;
+
+	ImGui::DestroyContext();
+
 	HDC hdc = GetDC(Window);
 	ReleaseDC(Window, hdc);
 	UnregisterClass("WINDOWCLASS", (HINSTANCE)GetModuleHandle(NULL));
@@ -122,6 +129,16 @@ LRESULT CALLBACK Application::StaticWndProc(HWND hWnd, UINT message, WPARAM wPar
 		return 0;
 	}
 
+	if ((message == WM_KEYDOWN && (wParam == 'v' || wParam == 'V' || wParam == 'z' || wParam == 'Z')) || (message == WM_KEYDOWN && wParam == VK_ESCAPE) || (message == WM_KEYDOWN && wParam == VK_RETURN && ((HIWORD(lParam) & KF_ALTDOWN))) || (message == WM_SYSKEYDOWN && wParam == VK_RETURN && ((HIWORD(lParam) & KF_ALTDOWN)))) {
+		ImGui::GetIO().WantCaptureMouse = false;
+	}
+
+	ImGui_ImplWin32_WndProcHandler(hWnd, message, wParam, lParam);
+
+	if (InitWindow && ImGui::GetIO().WantCaptureMouse) {
+		return DefWindowProc(hWnd, message, wParam, lParam);
+	}
+
 	if (application) {
 		application->processEvent(hWnd, message, wParam, lParam);
 		return application->ApplicationWndProc(hWnd, message, wParam, lParam);
@@ -186,6 +203,62 @@ LRESULT Application::ApplicationWndProc(HWND hWnd, UINT message, WPARAM wParam, 
 
 void Application::initVulkan() {
 	vlkInit(Window);
+}
+
+void Application::initImGUI() {
+	ImGui::CreateContext();
+	ImGui_ImplWin32_Init(Window);
+
+	ImGuiIO& io = ImGui::GetIO();
+	io.IniFilename = NULL;
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+
+	VkDescriptorPoolSize pool_size[11] ={
+		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1000 },
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1000 },
+		{ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 1000 }
+	};
+	VkDescriptorPoolCreateInfo pool_info = {};
+	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+	pool_info.maxSets = 1000 * 11;
+	pool_info.poolSizeCount = 11;
+	pool_info.pPoolSizes = pool_size;
+	vkCreateDescriptorPool(vlkContext.vkDevice, &pool_info, VK_NULL_HANDLE, &imguiPool);
+	//check_vk_result(err);
+
+	VkPipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo ={};
+	pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
+	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vlkContext.swapchain->format;
+	pipelineRenderingCreateInfo.depthAttachmentFormat = vlkContext.vkDepthFormat;
+	pipelineRenderingCreateInfo.stencilAttachmentFormat = vlkContext.vkDepthFormat;
+
+	ImGui_ImplVulkan_InitInfo init_info = {};
+	init_info.Instance = vlkContext.vkInstance;
+	init_info.PhysicalDevice = vlkContext.vkPhysicalDevice;
+	init_info.Device = vlkContext.vkDevice;
+	init_info.Queue = vlkContext.vkQueue;
+	init_info.DescriptorPool = imguiPool;
+	init_info.MinImageCount = 3;
+	init_info.ImageCount = 3;
+	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+	init_info.UseDynamicRendering = true;
+	init_info.PipelineRenderingCreateInfo = pipelineRenderingCreateInfo;
+
+
+	ImGui_ImplVulkan_Init(&init_info);
+
+	ImGui_ImplVulkan_CreateFontsTexture();
+
 }
 
 const HWND& Application::GetWindow() {

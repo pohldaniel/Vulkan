@@ -1,5 +1,10 @@
 #pragma once
 #include <windows.h>
+
+#include <imgui.h>
+#include <imgui_impl_win32.h>
+#include <imgui_impl_vulkan.h>
+
 #include <engine/input/Event.h>
 #include <engine/input/EventDispatcher.h>
 #include <engine/input/Keyboard.h>
@@ -29,6 +34,8 @@ public:
 	static int Height;
 	//static VlkContext VlkContext;
 
+	VkDescriptorPool imguiPool;
+
 private:
 
 	static LRESULT CALLBACK StaticWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
@@ -37,6 +44,7 @@ private:
 	void createWindow();
 	void showWindow();
 	void initVulkan();
+	void initImGUI();
 	void loadAssets();
 	void initStates();
 	

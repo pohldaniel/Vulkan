@@ -415,7 +415,7 @@ bool VlkContext::createVkDevice(VlkContext& vlkContext, void* window){
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pApplicationName = "vkApplication";
 	appInfo.pEngineName = "vkEngine";
-	appInfo.apiVersion = VK_API_VERSION_1_3;
+	appInfo.apiVersion = VK_API_VERSION_1_4;
 
 	const char* instanceExtensionsList[] = {
 		"VK_KHR_win32_surface",
@@ -562,6 +562,11 @@ bool VlkContext::createVkDevice(VlkContext& vlkContext, void* window){
 	indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
 	indexingFeatures.runtimeDescriptorArray = VK_TRUE;
 
+    VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT unusedAttachmentsFeatures = {};
+    unusedAttachmentsFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_UNUSED_ATTACHMENTS_FEATURES_EXT;
+    unusedAttachmentsFeatures.dynamicRenderingUnusedAttachments = VK_TRUE;
+    unusedAttachmentsFeatures.pNext = &indexingFeatures;
+
 	VkDeviceCreateInfo deviceInfo = {};
 	deviceInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 	deviceInfo.pQueueCreateInfos = &queueInfo;
@@ -570,7 +575,7 @@ bool VlkContext::createVkDevice(VlkContext& vlkContext, void* window){
 	deviceInfo.enabledExtensionCount = ArraySize(deviceExtensionsList);
 	//deviceInfo.pEnabledFeatures = &deviceFeatures;
 	deviceInfo.pEnabledFeatures = NULL;
-	deviceInfo.pNext = &indexingFeatures;
+	deviceInfo.pNext = &unusedAttachmentsFeatures;
 
 	vkCreateDevice(vlkContext.vkPhysicalDevice, &deviceInfo, 0, &vlkContext.vkDevice);
 

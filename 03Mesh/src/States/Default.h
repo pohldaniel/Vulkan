@@ -30,6 +30,12 @@ public:
 
 private:
 
+	void renderUi();
+
+	bool m_initUi = true;
+	bool m_drawUi = true;
+	bool m_drawWirframe = false;
+
 	Camera m_camera;
 	UniformBufferObject m_uniformBufferObject;
 	ObjModel m_model;

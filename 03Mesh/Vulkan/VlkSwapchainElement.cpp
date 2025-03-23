@@ -1,4 +1,5 @@
 #include <iostream>
+#include <imgui_impl_vulkan.h>
 #include "VlkContext.h"
 #include "VlkSwapchain.h"
 #include "VlkSwapchainElement.h"
@@ -99,7 +100,7 @@ VlkSwapchainElement::~VlkSwapchainElement(){
 }
 
 void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount){
-    vlkBeginCommandBuffer(commandBuffer, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    vlkBeginCommandBuffer(commandBuffer);
 
     if (!ctx->textureReady) {
         vlkTransitionImageLayout(commandBuffer, ctx->vmaImage.image, VK_IMAGE_ASPECT_COLOR_BIT,
@@ -140,7 +141,7 @@ void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const VkBuffer& v
     for (Entity* entity : entities){
         entity->draw(ubo, vertex, index, drawCount);
     }
-
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
     // End rendering
     vkCmdEndRendering(commandBuffer);
 

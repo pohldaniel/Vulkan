@@ -1,3 +1,4 @@
+#include <imgui.h>
 #include "StateMachine.h"
 #include "Application.h"
 
@@ -17,7 +18,7 @@ void StateMachine::update() {
 			States state = m_states.top()->getCurrentState();
 			delete m_states.top();
 			m_states.pop();
-
+			ImGui::GetIO().WantCaptureMouse = false;
 			if (!m_states.empty())
 				m_states.top()->OnReEnter(state);
 		}

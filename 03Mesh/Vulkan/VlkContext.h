@@ -100,7 +100,7 @@ extern "C" {
     void vlkTransitionImageLayout(const VkCommandBuffer& commandBuffer, const VkImage& vkImage, VkImageAspectFlags vkImageAspectFlags, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage);  
     void vlkCreateSemaphore(VkSemaphore& vkSemaphore);
     void vlkCreateFence(VkFence& vkFence);
-    void vlkBeginCommandBuffer(const VkCommandBuffer& vkCommandBuffer, VkCommandBufferUsageFlags vkCommandBufferUsageFlags);
+    void vlkBeginCommandBuffer(const VkCommandBuffer& vkCommandBuffer, VkCommandBufferUsageFlags vkCommandBufferUsageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     void vlkEndCommandBuffer(const VkCommandBuffer& vkCommandBuffer);
     void vlkQueueSubmit(const VkCommandBuffer& vkCommandBuffer);
 
