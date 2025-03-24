@@ -40,7 +40,6 @@
     <ClInclude Include="Vulkan\entity.h" />
     <ClInclude Include="Vulkan\VlkContext.h" />
     <ClInclude Include="Vulkan\VlkExtension.h" />
-    <ClInclude Include="Vulkan\VlkShader.h" />
     <ClInclude Include="Vulkan\VlkSwapchain.h" />
     <ClInclude Include="Vulkan\VlkSwapchainElement.h" />
     <ClInclude Include="Vulkan\VlkTexture.h" />
@@ -62,7 +61,6 @@
     <ClCompile Include="Vulkan\entity.cpp" />
     <ClCompile Include="Vulkan\VlkContext.cpp" />
     <ClCompile Include="Vulkan\VlkExtension.cpp" />
-    <ClCompile Include="Vulkan\VlkShader.cpp" />
     <ClCompile Include="Vulkan\VlkSwapchain.cpp" />
     <ClCompile Include="Vulkan\VlkSwapchainElement.cpp" />
     <ClCompile Include="Vulkan\VlkTexture.cpp" />

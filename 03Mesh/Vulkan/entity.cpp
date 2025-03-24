@@ -103,7 +103,7 @@ void Entity::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const 
         VK_SHADER_STAGE_FRAGMENT_BIT
     };
 
-    vkCmdBindShadersEXT(element->commandBuffer,sizeof(stages) / sizeof(VkShaderStageFlagBits),stages,ctx->shaders);
+    vkCmdBindShadersEXT(element->commandBuffer,sizeof(stages) / sizeof(VkShaderStageFlagBits),stages,ctx->shader.data());
 
     // Vertex input settings
     VkVertexInputBindingDescription2EXT vertexBinding{};

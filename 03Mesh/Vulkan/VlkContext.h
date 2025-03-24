@@ -1,38 +1,21 @@
 #pragma once
 #include <vector>
 #include <vulkan/vulkan.h>
+#include <shaderc/shaderc.h>
 #include "Data.h"
 
 class VlkSwapchain;
 
 struct VlkContext {
 
-    bool createVkDevice(VlkContext& vlkcontext, void* window);
-    void createCommandPool();
-    void createCommandBuffer();
-    void copyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size);
-    void createBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
-    void mapBuffer(const VkDeviceMemory& bufferMemory, const void* data, uint32_t size);
-
+    bool createVkDevice(VlkContext& vlkcontext, void* window); 
     void createMesh();
     void createTexture();
-    void createAllocator();
-   
- 
     void createShaders(const VkDevice& vkDevice);
     void createDescriptorPool(const VkDevice& vkDevice);
     void createDescriptorSetLayout(const VkDevice& vkDevice);
     void createPushConstantRange(const VkDevice& vkDevice);
     void createPipelineLayout(const VkDevice& vkDevice);
-    void createSampler(const VkDevice& vkDevice);
-  
-    void createTextureView(const VkDevice& vkDevice);
-    void resize();
-    void createUniformBuffers(const VkDevice& vkDevice);
-    void createBuffer(const VkDevice& vkDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
-    void updateUniformBuffer(const UniformBufferObject& ubo);
-    uint32_t GetMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 
     VkExtent2D screenSize;
     VkInstance vkInstance;
@@ -53,7 +36,7 @@ struct VlkContext {
     VkPipelineLayout pipelineLayout;
     VkSampler sampler;
     VkImageView textureView;
-    VkShaderEXT shaders[2];
+    std::vector<VkShaderEXT> shader;
     VmaImage vmaImage;
     VmaBuffer vmaBuffer;
     VmaAllocator memoryAllocator;
@@ -61,18 +44,11 @@ struct VlkContext {
     VkCommandPool vkCommandPool;
     VkCommandBuffer vkCommandBuffer;
     VkFormat vkDepthFormat;
-
-    std::vector<VkBuffer> vkBuffers;
-    std::vector<VkDeviceMemory> vkDeviceMemory;
-    std::vector<void*> vkBuffersMapped;
-
     UniformBufferObject ubo;
-
     VlkSwapchain* swapchain;
     VlkSwapchain* newSwapchain;
 
     bool textureReady = false;
-    bool depthReady = false;
 
     VkPolygonMode vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
     VkPresentModeKHR vkPresentModeKHR = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
@@ -81,6 +57,7 @@ struct VlkContext {
 extern VlkContext vlkContext;
 
 extern "C" {
+
     void vlkInit(void* window);
     void vlkResize();
     void vlkToggleVerticalSync();
@@ -91,12 +68,13 @@ extern "C" {
     void vlkCreateBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, uint32_t size, VkBufferUsageFlags vkBufferUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags);
     void vlkCopyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size);
    
-
     void vlkCreateImage(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, uint32_t width, uint32_t height, VkFormat vkFormat, VkImageTiling vkImageTiling, VkImageUsageFlags vkImageUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags);
     void vlkCreateImageView(VkImageView& vkImageView, const VkImage& vkImage, VkFormat vkFormat, VkImageAspectFlags vkImageAspectFlags, VkComponentMapping vkComponentMapping = {});  
     void vlkDestroyImage(const VkImage& vkImage, const VkDeviceMemory& vkDeviceMemory = NULL);
 
+    void vlkCreateCommandPool(VkCommandPool& vkCommandPool);
     void vlkCreateCommandBuffer(VkCommandBuffer& vkCommandBuffer);
+
     void vlkTransitionImageLayout(const VkCommandBuffer& commandBuffer, const VkImage& vkImage, VkImageAspectFlags vkImageAspectFlags, VkImageLayout oldLayout, VkImageLayout newLayout, VkAccessFlags srcAccessMask, VkAccessFlags dstAccessMask, VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage);  
     void vlkCreateSemaphore(VkSemaphore& vkSemaphore);
     void vlkCreateFence(VkFence& vkFence);
@@ -105,4 +83,13 @@ extern "C" {
     void vlkQueueSubmit(const VkCommandBuffer& vkCommandBuffer);
 
     void vlkCreateSwapChain(VkSwapchainKHR& vkSwapchainKHR, VkFormat& vkFormat, uint32_t width, uint32_t height, const VkPresentModeKHR vkPresentModeKHR = VK_PRESENT_MODE_FIFO_KHR, VkSwapchainKHR vkOldSwapchainKHR = NULL);
+
+    void vlkReadFile(const char* filename, std::vector<char>& data);
+    void vlkCompileSahder(const char* path, shaderc_shader_kind kind, std::vector<uint32_t>& shaderCode);
+    std::vector<VkShaderEXT>& vlkCreateShader(const VkDescriptorSetLayout& vkDescriptorSetLayout, const VkPushConstantRange& vkPushConstantRange, const std::vector<uint32_t>& vertexCode, const std::vector<uint32_t>& fragmentCode, std::vector<VkShaderEXT>& shader);
+
+    void vlkCreateSampler(VkSampler& vkSampler);
+    void vlkCreateAllocator(VmaAllocator& vmaAllocator);
+
+    uint32_t vlkFindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 };

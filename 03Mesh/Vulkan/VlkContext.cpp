@@ -1,12 +1,13 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
 
+#include <fstream>
+#include <sstream>
 #include <iostream>
 #include "Application.h"
 #include "VlkExtension.h"
 #include "VlkContext.h"
 #include "VlkSwapchain.h"
-#include "VlkShader.h"
 
 VlkContext vlkContext;
 
@@ -78,26 +79,27 @@ void vlkInit(void* window) {
     vlkContext.createVkDevice(vlkContext, window);
 	
     vkGetDeviceQueue(vlkContext.vkDevice, vlkContext.queueFamilyIndex, 0, &vlkContext.vkQueue);
-    vlkContext.createCommandPool();
-    vlkContext.createCommandBuffer();
+    vlkCreateCommandPool(vlkContext.vkCommandPool);
+    vlkCreateCommandBuffer(vlkContext.vkCommandBuffer);
+
 
     vlkContext.createDescriptorPool(vlkContext.vkDevice);
     vlkContext.createDescriptorSetLayout(vlkContext.vkDevice);
     vlkContext.createPushConstantRange(vlkContext.vkDevice);
     vlkContext.createPipelineLayout(vlkContext.vkDevice);
     
-    vlkContext.createSampler(vlkContext.vkDevice);
 
-    vlkContext.createAllocator();
+    vlkCreateSampler(vlkContext.sampler);
+    vlkCreateAllocator(vlkContext.memoryAllocator);
+
     vlkContext.createTexture();
-    vlkContext.createTextureView(vlkContext.vkDevice);
+
+
+    vlkCreateImageView(vlkContext.textureView, vlkContext.vmaImage.image, VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, { VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY });
 
     vlkContext.createShaders(vlkContext.vkDevice); 
     vlkContext.createMesh();
-    vlkContext.resize();
-    //vlkContext.createUniformBuffers(vlkContext.vkDevice);
 
-   
     vlkContext.swapchain = new VlkSwapchain(&vlkContext, Application::Width, Application::Height, vlkContext.vkPresentModeKHR);
    
 }
@@ -133,11 +135,7 @@ void vlkToggleWireframe() {
 }
 
 void vlkDraw(const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount) {
-    bool shouldResize = vlkContext.swapchain->draw(vlkContext.ubo, vertex, index, drawCount);
-
-    if (shouldResize){
-        vlkContext.resize();
-    }
+    vlkContext.swapchain->draw(vlkContext.ubo, vertex, index, drawCount);
 }
 
 void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size) {
@@ -166,7 +164,7 @@ void vlkCreateBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, uint32_
     VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
     vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     vkMemoryAllocateInfo.allocationSize = vkMemoryRequirements.size;
-    vkMemoryAllocateInfo.memoryTypeIndex = vlkContext.GetMemoryTypeIndex(vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags);
+    vkMemoryAllocateInfo.memoryTypeIndex = vlkFindMemoryType(vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags);
 
     vkAllocateMemory(vkDevice, &vkMemoryAllocateInfo, NULL, &vkDeviceMemory);
     vkBindBufferMemory(vkDevice, vkBuffer, vkDeviceMemory, 0);
@@ -220,7 +218,7 @@ void vlkCreateImage(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, uint32_t w
     VkMemoryAllocateInfo vkMemoryAllocateInfo = {};
     vkMemoryAllocateInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
     vkMemoryAllocateInfo.allocationSize = vkMemoryRequirements.size;
-    vkMemoryAllocateInfo.memoryTypeIndex = vlkContext.findMemoryType(vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags);
+    vkMemoryAllocateInfo.memoryTypeIndex = vlkFindMemoryType(vkMemoryRequirements.memoryTypeBits, vkMemoryPropertyFlags);
 
     vkAllocateMemory(vkDevice, &vkMemoryAllocateInfo, nullptr, &vkDeviceMemory);
     vkBindImageMemory(vkDevice, vkImage, vkDeviceMemory, 0);
@@ -236,9 +234,9 @@ void vlkCreateImageView(VkImageView& vkImageView, const VkImage& vkImage, VkForm
     vkImageViewCreateInfo.format = vkFormat;
     vkImageViewCreateInfo.subresourceRange.aspectMask = vkImageAspectFlags;
     vkImageViewCreateInfo.subresourceRange.baseMipLevel = 0;
-    vkImageViewCreateInfo.subresourceRange.levelCount = 1;
+    vkImageViewCreateInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
     vkImageViewCreateInfo.subresourceRange.baseArrayLayer = 0;
-    vkImageViewCreateInfo.subresourceRange.layerCount = 1;
+    vkImageViewCreateInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
     vkImageViewCreateInfo.components = vkComponentMapping;
     vkCreateImageView(vkDevice, &vkImageViewCreateInfo, NULL, &vkImageView);
 }
@@ -253,6 +251,15 @@ void vlkDestroyImage(const VkImage& vkImage, const VkDeviceMemory& vkDeviceMemor
 void vlkDestroyImage(const VkImage& vkImage) {
     const VkDevice& vkDevice = vlkContext.vkDevice;
     vkDestroyImage(vkDevice, vkImage, NULL);
+}
+
+void vlkCreateCommandPool(VkCommandPool& vkCommandPool) {
+    const VkDevice& vkDevice = vlkContext.vkDevice;
+    VkCommandPoolCreateInfo vkCommandPoolCreateInfo = {};
+    vkCommandPoolCreateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    vkCommandPoolCreateInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    vkCommandPoolCreateInfo.queueFamilyIndex = vlkContext.queueFamilyIndex;
+    vkCreateCommandPool(vkDevice, &vkCommandPoolCreateInfo, 0, &vkCommandPool);
 }
 
 void vlkCreateCommandBuffer(VkCommandBuffer& vkCommandBuffer) {
@@ -374,9 +381,148 @@ void vlkCreateSwapChain(VkSwapchainKHR& vkSwapchainKHR, VkFormat& vkFormat, uint
     vkSwapchainCreateInfoKHR.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     vkSwapchainCreateInfoKHR.clipped = true;
     vkSwapchainCreateInfoKHR.presentMode = vkPresentModeKHR;
-    //createInfo.presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
     vkSwapchainCreateInfoKHR.oldSwapchain = vkOldSwapchainKHR;
     vkCreateSwapchainKHR(vkDevice, &vkSwapchainCreateInfoKHR, VK_NULL_HANDLE, &vkSwapchainKHR);
+}
+
+void vlkReadFile(const char* path, std::vector<char>& buffer) {
+
+    std::ifstream file(path, std::ios::ate | std::ios::binary);
+
+    if (!file.is_open()) {
+        std::stringstream line_builder;
+        line_builder << "Failed to load \""
+            << path << "\"" << std::endl;
+        std::string line = line_builder.str();
+    }
+
+    size_t filesize{ static_cast<size_t>(file.tellg()) };
+
+    buffer.resize(filesize);
+    file.seekg(0);
+    file.read(buffer.data(), filesize);
+
+    file.close();
+}
+
+void vlkCompileSahder(const char* path, shaderc_shader_kind kind, std::vector<uint32_t>& shaderCode) {
+    shaderc_compile_options_t options = shaderc_compile_options_initialize();
+    shaderc_compile_options_set_target_env(options, shaderc_target_env_opengl, shaderc_env_version_opengl_4_5);
+    shaderc_compile_options_set_target_env(options, shaderc_target_env_vulkan, shaderc_env_version_vulkan_1_4);
+    shaderc_compile_options_set_source_language(options, shaderc_source_language_glsl);
+    shaderc_compile_options_set_target_spirv(options, shaderc_spirv_version_1_3);
+    shaderc_compile_options_set_optimization_level(options, shaderc_optimization_level_zero);
+    //shaderc_compile_options_set_suppress_warnings(options);
+    //shaderc_compile_options_set_warnings_as_errors(options);
+    //shaderc_compile_options_set_auto_bind_uniforms(options, true);
+    //shaderc_compile_options_set_preserve_bindings(options, true);
+    //shaderc_compile_options_set_vulkan_rules_relaxed(options, true);
+    //shaderc_compile_options_set_auto_combined_image_sampler(options, true);
+
+    std::vector<char> source;
+    vlkReadFile(path, source);
+    shaderc_compiler_t compiler = shaderc_compiler_initialize();
+    shaderc_compilation_result_t result = shaderc_compile_into_preprocessed_text(compiler, source.data(), source.size(), kind, path, "main", options);
+
+    if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
+        std::cout << "Error: preprocess" << std::endl;
+    }
+
+    //copy result into info for next compilation operation
+    const char* src = reinterpret_cast<const char*>(shaderc_result_get_bytes(result));
+    size_t newSize = reinterpret_cast<const char*>(shaderc_result_get_bytes(result)) + shaderc_result_get_length(result) / sizeof(char) - src;
+    source.resize(newSize);
+    memcpy(source.data(), src, newSize);
+
+    compiler = shaderc_compiler_initialize();
+    result = shaderc_compile_into_spv_assembly(compiler, source.data(), source.size(), kind, path, "main", options);
+
+    if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
+        std::cout << "Error: toSpvAssembly" << std::endl;
+    }
+
+    src = reinterpret_cast<const char*>(shaderc_result_get_bytes(result));
+    newSize = reinterpret_cast<const char*>(shaderc_result_get_bytes(result)) + shaderc_result_get_length(result) / sizeof(char) - src;
+    source.resize(newSize);
+    memcpy(source.data(), src, newSize);
+
+    compiler = shaderc_compiler_initialize();
+    result = shaderc_assemble_into_spv(compiler, source.data(), source.size(), options);
+    if (shaderc_result_get_compilation_status(result) != shaderc_compilation_status_success) {
+        std::cout << "Error: compile" << std::endl;
+    }
+
+    const uint32_t* res = reinterpret_cast<const uint32_t*>(shaderc_result_get_bytes(result));
+    size_t wordCount = shaderc_result_get_length(result) / sizeof(uint32_t);
+    shaderCode.resize(wordCount);
+    memcpy(shaderCode.data(), res, shaderc_result_get_length(result));
+}
+
+std::vector<VkShaderEXT>& vlkCreateShader(const VkDescriptorSetLayout& vkDescriptorSetLayout, const VkPushConstantRange& vkPushConstantRange, const std::vector<uint32_t>& vertexCode, const std::vector<uint32_t>& fragmentCode, std::vector<VkShaderEXT>& shader) {
+    const VkDevice& vkDevice = vlkContext.vkDevice;
+
+    VkShaderCreateInfoEXT vkShaderCreateInfoEXT[2] = {{}};
+    vkShaderCreateInfoEXT[0].sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
+    vkShaderCreateInfoEXT[0].flags = VK_SHADER_CREATE_LINK_STAGE_BIT_EXT;
+    vkShaderCreateInfoEXT[0].codeType = VK_SHADER_CODE_TYPE_SPIRV_EXT;
+    vkShaderCreateInfoEXT[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
+    vkShaderCreateInfoEXT[0].pName = "main";
+    vkShaderCreateInfoEXT[0].codeSize = sizeof(uint32_t) * vertexCode.size();
+    vkShaderCreateInfoEXT[0].pCode = vertexCode.data();
+    vkShaderCreateInfoEXT[0].setLayoutCount = 1;
+    vkShaderCreateInfoEXT[0].pSetLayouts = &vkDescriptorSetLayout;
+    vkShaderCreateInfoEXT[0].pushConstantRangeCount = 1;
+    vkShaderCreateInfoEXT[0].pPushConstantRanges = &vkPushConstantRange;
+    vkShaderCreateInfoEXT[0].nextStage = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    vkShaderCreateInfoEXT[1].sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
+    vkShaderCreateInfoEXT[1].flags = VK_SHADER_CREATE_LINK_STAGE_BIT_EXT;
+    vkShaderCreateInfoEXT[1].codeType = VK_SHADER_CODE_TYPE_SPIRV_EXT;
+    vkShaderCreateInfoEXT[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
+    vkShaderCreateInfoEXT[1].pName = "main";
+    vkShaderCreateInfoEXT[1].codeSize = sizeof(uint32_t) * fragmentCode.size();
+    vkShaderCreateInfoEXT[1].pCode = fragmentCode.data();
+    vkShaderCreateInfoEXT[1].setLayoutCount = 1;
+    vkShaderCreateInfoEXT[1].pSetLayouts = &vkDescriptorSetLayout;
+    vkShaderCreateInfoEXT[1].pushConstantRangeCount = 1;
+    vkShaderCreateInfoEXT[1].pPushConstantRanges = &vkPushConstantRange;
+
+    shader.resize(2);
+    vkCreateShadersEXT(vkDevice, 2, vkShaderCreateInfoEXT, VK_NULL_HANDLE, shader.data());
+    return shader;
+}
+
+void vlkCreateSampler(VkSampler& vkSampler) {
+    const VkDevice& vkDevice = vlkContext.vkDevice;
+
+    VkSamplerCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    createInfo.maxAnisotropy = 16;
+    createInfo.maxLod = VK_LOD_CLAMP_NONE;
+    createInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+    vkCreateSampler(vkDevice, &createInfo, nullptr, &vkSampler);
+}
+
+void vlkCreateAllocator(VmaAllocator& vmaAllocator) {
+    VmaAllocatorCreateInfo createInfo = {};
+    createInfo.physicalDevice = vlkContext.vkPhysicalDevice;
+    createInfo.device = vlkContext.vkDevice;
+    createInfo.instance = vlkContext.vkInstance;
+    vmaCreateAllocator(&createInfo, &vmaAllocator);
+}
+
+uint32_t vlkFindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(vlkContext.vkPhysicalDevice, &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
+    return 0;
 }
 
 bool VlkContext::createVkDevice(VlkContext& vlkContext, void* window){
@@ -602,103 +748,6 @@ bool VlkContext::createVkDevice(VlkContext& vlkContext, void* window){
 	return true;
 }
 
-void VlkContext::resize(){
-	/*VkResult result;
-
-	vkDeviceWaitIdle(logicalDevice);
-
-	delete swapchain;
-	swapchain = new Swapchain(this, width, height);*/
-}
-
-void VlkContext::createCommandPool() {
-    VkCommandPoolCreateInfo poolInfo = {};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VkCommandPoolCreateFlagBits::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndex;
-    vkCreateCommandPool(vkDevice, &poolInfo, 0, &vkCommandPool);
-}
-
-void VlkContext::createCommandBuffer() {
-    VkCommandBufferAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = vkCommandPool;
-    allocInfo.commandBufferCount = 1;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-
-    vkAllocateCommandBuffers(vkDevice, &allocInfo, &vkCommandBuffer);
-}
-
-void VlkContext::createBuffer(VkBuffer& buffer, VkDeviceMemory& bufferMemory, uint32_t size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
-    VkBufferCreateInfo vkBufferCreateInfo = {};
-    vkBufferCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    vkBufferCreateInfo.size = size;
-    vkBufferCreateInfo.usage = usage;
-    vkBufferCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    vkCreateBuffer(vlkContext.vkDevice, &vkBufferCreateInfo, NULL, &buffer);
-
-    VkMemoryRequirements vkMemoryRequirements;
-    vkGetBufferMemoryRequirements(vlkContext.vkDevice, buffer, &vkMemoryRequirements);
-
-    VkMemoryAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = vkMemoryRequirements.size;
-    allocInfo.memoryTypeIndex = vlkContext.GetMemoryTypeIndex(vkMemoryRequirements.memoryTypeBits, properties);
-    
-    vkAllocateMemory(vlkContext.vkDevice, &allocInfo, NULL, &bufferMemory);
-    vkBindBufferMemory(vlkContext.vkDevice, buffer, bufferMemory, 0);
-}
-
-void VlkContext::mapBuffer(const VkDeviceMemory& bufferMemory, const void* data, uint32_t size) {
-    void* pMem = nullptr;
-    vkMapMemory(vlkContext.vkDevice, bufferMemory, 0, size, 0, &pMem);
-    memcpy(pMem, data, size);
-    vkUnmapMemory(vlkContext.vkDevice, bufferMemory);
-}
-
-void VlkContext::copyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size) {
-    VkCommandBufferBeginInfo vkCommandBufferBeginInfo = {};
-    vkCommandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    vkCommandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    vkCommandBufferBeginInfo.pNext = NULL;
-    vkCommandBufferBeginInfo.pInheritanceInfo = NULL;
-
-    vkBeginCommandBuffer(vkCommandBuffer, &vkCommandBufferBeginInfo);
-
-    VkBufferCopy vkBufferCopy = {};
-    vkBufferCopy.srcOffset = 0;
-    vkBufferCopy.dstOffset = 0;
-    vkBufferCopy.size = size;
-
-    vkCmdCopyBuffer(vkCommandBuffer, srcBuffer, dstBuffer, 1, &vkBufferCopy);
-    vkEndCommandBuffer(vkCommandBuffer);
-    VkSubmitInfo submitInfo = {};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &vkCommandBuffer;
-    submitInfo.waitSemaphoreCount = 0;
-    submitInfo.pWaitSemaphores = VK_NULL_HANDLE;
-    submitInfo.pWaitDstStageMask = VK_NULL_HANDLE;
-    submitInfo.signalSemaphoreCount = 0;
-    submitInfo.pSignalSemaphores = VK_NULL_HANDLE;
-    submitInfo.pNext = NULL;
-
-    vkQueueSubmit(vlkContext.vkQueue, 1, &submitInfo, VK_NULL_HANDLE);
-    vkQueueWaitIdle(vlkContext.vkQueue);
-}
-
-void VlkContext::createAllocator() {
-    VkResult result;
-
-    VmaAllocatorCreateInfo createInfo{};
-    createInfo.physicalDevice = vkPhysicalDevice;
-    createInfo.device = vkDevice;
-    createInfo.instance = vkInstance;
-
-    vmaCreateAllocator(&createInfo, &memoryAllocator);
-}
-
 void VlkContext::createMesh() {
     VkResult result;
 
@@ -881,125 +930,9 @@ void VlkContext::createPipelineLayout(const VkDevice& vkDevice) {
     vkCreatePipelineLayout(vkDevice, &createInfo, nullptr, &pipelineLayout);
 }
 
-void VlkContext::createSampler(const VkDevice& vkDevice) {
-    VkResult result;
-
-    VkSamplerCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    createInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    createInfo.maxAnisotropy = 16;
-    createInfo.maxLod = VK_LOD_CLAMP_NONE;
-    createInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-
-    vkCreateSampler(vkDevice, &createInfo, nullptr, &sampler);
-}
-
-void VlkContext::createShaders(const VkDevice& vkDevice){
-  
-
+void VlkContext::createShaders(const VkDevice& vkDevice){  
     std::vector<uint32_t> vertexCode, fragmentCode;
-    VlkShader shader;
-    std::vector<VkShaderEXT> _shaders = shader.make_shader_objects(vkInstance, vkDevice, "mesh", vertexCode, fragmentCode, descriptorSetLayout, pushConstantRange, true);
-    shaders[0] = _shaders[0];
-    shaders[1] = _shaders[1];
-   
-   
-}
-
-void VlkContext::createTextureView(const VkDevice& vkDevice){
-    VkResult result;
-
-    VkImageViewCreateInfo createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-    createInfo.subresourceRange.baseMipLevel = 0;
-    createInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-    createInfo.subresourceRange.baseArrayLayer = 0;
-    createInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-    createInfo.image = vmaImage.image;
-    createInfo.format = VK_FORMAT_B8G8R8A8_SRGB;
-    createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-
-    vkCreateImageView(vkDevice, &createInfo, nullptr, &textureView);
-}
-
-
-void VlkContext::createUniformBuffers(const VkDevice& vkDevice) {
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
-    vkBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    vkDeviceMemory.resize(MAX_FRAMES_IN_FLIGHT);
-    vkBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        createBuffer(vkDevice, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vkBuffers[i], vkDeviceMemory[i]);
-        vkMapMemory(vkDevice, vkDeviceMemory[i], 0, bufferSize, 0, &vkBuffersMapped[i]);
-    }
-}
-
-void VlkContext::createBuffer(const VkDevice& vkDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
-    VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = size;
-    bufferInfo.usage = usage;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    if (vkCreateBuffer(vkDevice, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create buffer!");
-    }
-
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(vkDevice, buffer, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-    if (vkAllocateMemory(vkDevice, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate buffer memory!");
-    }
-
-    vkBindBufferMemory(vkDevice, buffer, bufferMemory, 0);
-}
-
-uint32_t VlkContext::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(vkPhysicalDevice, &memProperties);
-    
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-    return 0;
-}
-
-void VlkContext::updateUniformBuffer(const UniformBufferObject& ubo) {
-    memcpy(vkBuffersMapped[0], &ubo, sizeof(ubo));
-}
-
-uint32_t VlkContext::GetMemoryTypeIndex(uint32_t typeFilter, VkMemoryPropertyFlags properties) const{
-    VkPhysicalDeviceMemoryProperties vkPhysicalDeviceMemoryProperties;
-    vkGetPhysicalDeviceMemoryProperties(vkPhysicalDevice, &vkPhysicalDeviceMemoryProperties);
-
-    for (uint32_t i = 0; i < vkPhysicalDeviceMemoryProperties.memoryTypeCount; i++) {
-        const VkMemoryType& memType = vkPhysicalDeviceMemoryProperties.memoryTypes[i];
-        uint32_t bitmask = (1 << i);
-        bool isMemTypeSupported = (typeFilter & bitmask);
-        bool hasRequiredMemProps = ((memType.propertyFlags & properties) == properties);
-
-        if (isMemTypeSupported && hasRequiredMemProps)
-            return i;
-
-        //if ((typeFilter & (1 << i)) && (vkPhysicalDeviceMemoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-           // return i;
-        //}
-    }
-    std::cout << "Failed: " << std::endl;
-    return 0;
+    vlkCompileSahder("res/shader/mesh.vert", shaderc_vertex_shader, vertexCode);
+    vlkCompileSahder("res/shader/mesh.frag", shaderc_fragment_shader, fragmentCode);
+    vlkCreateShader(descriptorSetLayout, pushConstantRange, vertexCode, fragmentCode, shader);  
 }

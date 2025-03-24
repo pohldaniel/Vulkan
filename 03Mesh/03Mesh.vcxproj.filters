@@ -102,9 +102,6 @@
     <ClInclude Include="Vulkan\VlkSwapchainElement.h">
       <Filter>Vulkan</Filter>
     </ClInclude>
-    <ClInclude Include="Vulkan\VlkShader.h">
-      <Filter>Vulkan</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="engine\Vector.cpp">
@@ -162,9 +159,6 @@
       <Filter>Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="Vulkan\VlkSwapchainElement.cpp">
-      <Filter>Vulkan</Filter>
-    </ClCompile>
-    <ClCompile Include="Vulkan\VlkShader.cpp">
       <Filter>Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
