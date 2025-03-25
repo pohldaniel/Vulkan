@@ -51,4 +51,8 @@ private:
 
 	VkBuffer m_dstIndexBuffer;
 	VkDeviceMemory m_dstIndexBufferMemory;
+
+	VkImage textureImage;
+	VkDeviceMemory textureImageMemory;
+	VkImageView textureView;
 };

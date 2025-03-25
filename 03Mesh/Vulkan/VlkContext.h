@@ -47,7 +47,7 @@ struct VlkContext {
     UniformBufferObject ubo;
     VlkSwapchain* swapchain;
     VlkSwapchain* newSwapchain;
-
+    VkDescriptorSet descriptorSet;
     bool textureReady = false;
 
     VkPolygonMode vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
@@ -71,6 +71,7 @@ extern "C" {
     void vlkCreateImage(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, uint32_t width, uint32_t height, VkFormat vkFormat, VkImageTiling vkImageTiling, VkImageUsageFlags vkImageUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags);
     void vlkCreateImageView(VkImageView& vkImageView, const VkImage& vkImage, VkFormat vkFormat, VkImageAspectFlags vkImageAspectFlags, VkComponentMapping vkComponentMapping = {});  
     void vlkDestroyImage(const VkImage& vkImage, const VkDeviceMemory& vkDeviceMemory = NULL);
+    void vlkCopyBufferToImage(const VkBuffer& srcBuffer, const VkImage& dstImage, uint32_t width, uint32_t height);
 
     void vlkCreateCommandPool(VkCommandPool& vkCommandPool);
     void vlkCreateCommandBuffer(VkCommandBuffer& vkCommandBuffer);
@@ -79,7 +80,7 @@ extern "C" {
     void vlkCreateSemaphore(VkSemaphore& vkSemaphore);
     void vlkCreateFence(VkFence& vkFence);
     void vlkBeginCommandBuffer(const VkCommandBuffer& vkCommandBuffer, VkCommandBufferUsageFlags vkCommandBufferUsageFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    void vlkEndCommandBuffer(const VkCommandBuffer& vkCommandBuffer);
+    void vlkEndCommandBuffer(const VkCommandBuffer& vkCommandBuffer, bool submit = false);
     void vlkQueueSubmit(const VkCommandBuffer& vkCommandBuffer);
 
     void vlkCreateSwapChain(VkSwapchainKHR& vkSwapchainKHR, VkFormat& vkFormat, uint32_t width, uint32_t height, const VkPresentModeKHR vkPresentModeKHR = VK_PRESENT_MODE_FIFO_KHR, VkSwapchainKHR vkOldSwapchainKHR = NULL);
@@ -92,4 +93,8 @@ extern "C" {
     void vlkCreateAllocator(VmaAllocator& vmaAllocator);
 
     uint32_t vlkFindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+    void vlkReadImageFile(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, const char* fileName, int& width, int& height, const bool flipVertical = false);
+
+   
 };

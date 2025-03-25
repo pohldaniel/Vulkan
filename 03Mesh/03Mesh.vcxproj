@@ -29,9 +29,9 @@
     <ClInclude Include="engine\input\Mouse.h" />
     <ClInclude Include="engine\input\MouseEventListener.h" />
     <ClInclude Include="engine\interfaces\IStateMachine.h" />
+    <ClInclude Include="engine\Material.h" />
     <ClInclude Include="engine\ObjModel.h" />
     <ClInclude Include="engine\TrackBall.h" />
-    <ClInclude Include="engine\Vector.h" />
     <ClInclude Include="src\Application.h" />
     <ClInclude Include="src\Globals.h" />
     <ClInclude Include="src\States\Default.h" />
@@ -52,8 +52,8 @@
     <ClCompile Include="engine\input\KeyboardEventListener.cpp" />
     <ClCompile Include="engine\input\Mouse.cpp" />
     <ClCompile Include="engine\input\MouseEventListener.cpp" />
+    <ClCompile Include="engine\Material.cpp" />
     <ClCompile Include="engine\ObjModel.cpp" />
-    <ClCompile Include="engine\Vector.cpp" />
     <ClCompile Include="src\Application.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\States\Default.cpp" />
@@ -138,13 +138,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;VK_USE_PLATFORM_WIN32_KHR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.\;src;..\libimgui;C:\VulkanSDK\1.4.309.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;src;..\libimgui;..\libsoil2;C:\VulkanSDK\1.4.309.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libimgui.lib;vulkan-1.lib;shaderc_combined.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libimgui.lib;libsoil2.lib;vulkan-1.lib;shaderc_combined.lib;OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\libd\x86;C:\VulkanSDK\1.4.309.0\Lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -157,13 +157,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;VK_USE_PLATFORM_WIN32_KHR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.\;src;..\libimgui;C:\VulkanSDK\1.4.309.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;src;..\libimgui;..\libsoil2;C:\VulkanSDK\1.4.309.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libimgui.lib;vulkan-1.lib;shaderc_combined.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libimgui.lib;libsoil2.lib;vulkan-1.lib;shaderc_combined.lib;OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\libd\x64;C:\VulkanSDK\1.4.309.0\Lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -178,7 +178,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;VK_USE_PLATFORM_WIN32_KHR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.\;src;..\libimgui;C:\VulkanSDK\1.4.309.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;src;..\libimgui;..\libsoil2;C:\VulkanSDK\1.4.309.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -186,7 +186,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libimgui.lib;vulkan-1.lib;shaderc_combined.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libimgui.lib;libsoil2.lib;vulkan-1.lib;shaderc_combined.lib;OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\lib\x86;C:\VulkanSDK\1.4.309.0\Lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -201,7 +201,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;_CRT_SECURE_NO_WARNINGS;VK_USE_PLATFORM_WIN32_KHR;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>.\;src;..\libimgui;C:\VulkanSDK\1.4.309.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>.\;src;..\libimgui;..\libsoil2;C:\VulkanSDK\1.4.309.0\Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -209,7 +209,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>libimgui.lib;vulkan-1.lib;shaderc_combined.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libimgui.lib;libsoil2.lib;vulkan-1.lib;shaderc_combined.lib;OpenGL32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\lib\x64;C:\VulkanSDK\1.4.309.0\Lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>

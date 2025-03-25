@@ -48,6 +48,7 @@ Application::Application(const float& dt, const float& fdt) : m_dt(dt), m_fdt(fd
 	SavedExStyle = GetWindowLong(Window, GWL_EXSTYLE);
 	SavedStyle = GetWindowLong(Window, GWL_STYLE);
 	initStates();	
+
 }
 Application::~Application() {	
 	delete Machine;

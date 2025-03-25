@@ -33,9 +33,6 @@
     <ClInclude Include="engine\Clock.h">
       <Filter>engine</Filter>
     </ClInclude>
-    <ClInclude Include="engine\Vector.h">
-      <Filter>engine</Filter>
-    </ClInclude>
     <ClInclude Include="engine\input\ApplicationEventListener.h">
       <Filter>engine\input</Filter>
     </ClInclude>
@@ -102,11 +99,11 @@
     <ClInclude Include="Vulkan\VlkSwapchainElement.h">
       <Filter>Vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="engine\Material.h">
+      <Filter>engine</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="engine\Vector.cpp">
-      <Filter>engine</Filter>
-    </ClCompile>
     <ClCompile Include="src\Application.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -160,6 +157,9 @@
     </ClCompile>
     <ClCompile Include="Vulkan\VlkSwapchainElement.cpp">
       <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="engine\Material.cpp">
+      <Filter>engine</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

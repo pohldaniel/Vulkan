@@ -16,13 +16,7 @@ VlkSwapchainElement::VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image,
     vlkCreateImageView(depthImageView, depthImage, ctx->vkDepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
 
     {
-        VkDescriptorSetAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-        allocInfo.descriptorPool = ctx->descriptorPool;
-        allocInfo.descriptorSetCount = 1;
-        allocInfo.pSetLayouts = &ctx->descriptorSetLayout;
-
-        vkAllocateDescriptorSets(ctx->vkDevice, &allocInfo, &descriptorSet);
+        
     }
 
     {
@@ -33,13 +27,13 @@ VlkSwapchainElement::VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image,
 
         VkWriteDescriptorSet textureDescriptorWrite{};
         textureDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        textureDescriptorWrite.dstSet = descriptorSet;
+        textureDescriptorWrite.dstSet = ctx->descriptorSet;
         textureDescriptorWrite.dstBinding = 2;
         textureDescriptorWrite.descriptorCount = 1;
         textureDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
         textureDescriptorWrite.pImageInfo = &imageInfo;
 
-        vkUpdateDescriptorSets(ctx->vkDevice, 1, &textureDescriptorWrite, 0, nullptr);
+        //vkUpdateDescriptorSets(ctx->vkDevice, 1, &textureDescriptorWrite, 0, nullptr);
     }
 
     {
@@ -49,7 +43,7 @@ VlkSwapchainElement::VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image,
         colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-        colorAttachment.clearValue.color = { { 0.0f, 0.0f, 0.0f, 1.0f } };
+        colorAttachment.clearValue.color = { { 1.0f, 1.0f, 1.0f, 1.0f } };
 
 
         depthStencilAttachment = {};
@@ -96,19 +90,11 @@ VlkSwapchainElement::~VlkSwapchainElement(){
     vkDestroyFence(ctx->vkDevice, fence, nullptr);
     vkDestroyImageView(ctx->vkDevice, imageView, nullptr);
     vkDestroyImageView(ctx->vkDevice, depthImageView, nullptr);
-    vkFreeDescriptorSets(ctx->vkDevice, ctx->descriptorPool, 1, &descriptorSet);
+    //vkFreeDescriptorSets(ctx->vkDevice, ctx->descriptorPool, 1, &ctx->descriptorSet);
 }
 
 void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount){
     vlkBeginCommandBuffer(commandBuffer);
-
-    if (!ctx->textureReady) {
-        vlkTransitionImageLayout(commandBuffer, ctx->vmaImage.image, VK_IMAGE_ASPECT_COLOR_BIT,
-                                 VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                 VK_ACCESS_NONE, VK_ACCESS_SHADER_READ_BIT,
-                                 VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-        ctx->textureReady = true;
-    }
 
     vlkTransitionImageLayout(commandBuffer, image, VK_IMAGE_ASPECT_COLOR_BIT,
                              VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -136,7 +122,7 @@ void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const VkBuffer& v
     vkCmdSetLineWidth(commandBuffer, 2.0f);
 
     // Bind global descriptor set
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 0, 1, &ctx->descriptorSet, 0, NULL);
     // Draw entities
     for (Entity* entity : entities){
         entity->draw(ubo, vertex, index, drawCount);
@@ -156,4 +142,5 @@ void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const VkBuffer& v
                              VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
     vlkEndCommandBuffer(commandBuffer);
+    //vlkQueueSubmit(commandBuffer);
 }

@@ -28,14 +28,13 @@ public:
 
     VkImage depthImage;
     VkImageView depthImageView;
-    //VkDeviceMemory depthImageMemory;
 
     VkSemaphore startSemaphore;
     VkSemaphore endSemaphore;
     VkFence fence;
     VkFence lastFence = nullptr;
 
-    VkDescriptorSet descriptorSet;
+   
     int nextUniformIndex = 0;
 
     VkRenderingAttachmentInfo colorAttachment;

@@ -1,5 +1,6 @@
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
+#include <SOIL2/SOIL2.h>
 
 #include <fstream>
 #include <sstream>
@@ -9,7 +10,7 @@
 #include "VlkContext.h"
 #include "VlkSwapchain.h"
 
-VlkContext vlkContext;
+VlkContext vlkContext = {};
 
 #define ArraySize(arr) sizeof((arr)) / sizeof((arr[0]))
 
@@ -87,15 +88,19 @@ void vlkInit(void* window) {
     vlkContext.createDescriptorSetLayout(vlkContext.vkDevice);
     vlkContext.createPushConstantRange(vlkContext.vkDevice);
     vlkContext.createPipelineLayout(vlkContext.vkDevice);
-    
+    VkDescriptorSetAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = vlkContext.descriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &vlkContext.descriptorSetLayout;
+
+    vkAllocateDescriptorSets(vlkContext.vkDevice, &allocInfo, &vlkContext.descriptorSet);
 
     vlkCreateSampler(vlkContext.sampler);
     vlkCreateAllocator(vlkContext.memoryAllocator);
 
-    vlkContext.createTexture();
-
-
-    vlkCreateImageView(vlkContext.textureView, vlkContext.vmaImage.image, VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, { VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY });
+    //vlkContext.createTexture();
+    //vlkCreateImageView(vlkContext.textureView, vlkContext.vmaImage.image, VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, { VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY });
 
     vlkContext.createShaders(vlkContext.vkDevice); 
     vlkContext.createMesh();
@@ -171,25 +176,15 @@ void vlkCreateBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, uint32_
 }
 
 void vlkCopyBuffer(const VkBuffer& srcBuffer, const VkBuffer& dstBuffer, uint32_t size) {
-    const VkCommandBuffer& vkCommandBuffer = vlkContext.vkCommandBuffer;
-
-    VkCommandBufferBeginInfo vkCommandBufferBeginInfo = {};
-    vkCommandBufferBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    vkCommandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    vkCommandBufferBeginInfo.pNext = NULL;
-    vkCommandBufferBeginInfo.pInheritanceInfo = NULL;
-
-    vkBeginCommandBuffer(vkCommandBuffer, &vkCommandBufferBeginInfo);
-
+    const VkCommandBuffer& vkCommandBuffer = vlkContext.vkCommandBuffer; 
     VkBufferCopy vkBufferCopy = {};
     vkBufferCopy.srcOffset = 0;
     vkBufferCopy.dstOffset = 0;
     vkBufferCopy.size = size;
 
+    vlkBeginCommandBuffer(vkCommandBuffer);
     vkCmdCopyBuffer(vkCommandBuffer, srcBuffer, dstBuffer, 1, &vkBufferCopy);
-    vkEndCommandBuffer(vkCommandBuffer);
-
-    vlkQueueSubmit(vkCommandBuffer);
+    vlkEndCommandBuffer(vkCommandBuffer, true);
 }
 
 void vlkCreateImage(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, uint32_t width, uint32_t height, VkFormat vkFormat, VkImageTiling vkImageTiling, VkImageUsageFlags vkImageUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags) {
@@ -246,6 +241,28 @@ void vlkDestroyImage(const VkImage& vkImage, const VkDeviceMemory& vkDeviceMemor
     if(vkDeviceMemory)
       vkFreeMemory(vkDevice, vkDeviceMemory, NULL);
     vkDestroyImage(vkDevice, vkImage, NULL);
+}
+
+void vlkCopyBufferToImage(const VkBuffer& srcBuffer, const VkImage& dstImage, uint32_t width, uint32_t height) {
+    const VkCommandBuffer& vkCommandBuffer = vlkContext.vkCommandBuffer;
+    
+
+    VkBufferImageCopy vkBufferImageCopy = {};
+    vkBufferImageCopy.bufferOffset = 0;
+    vkBufferImageCopy.bufferRowLength = 0;
+    vkBufferImageCopy.bufferImageHeight = 0;
+
+    vkBufferImageCopy.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    vkBufferImageCopy.imageSubresource.mipLevel = 0;
+    vkBufferImageCopy.imageSubresource.baseArrayLayer = 0;
+    vkBufferImageCopy.imageSubresource.layerCount = 1;
+
+    vkBufferImageCopy.imageOffset = { 0, 0, 0 };
+    vkBufferImageCopy.imageExtent = {width, height, 1};
+
+    vlkBeginCommandBuffer(vkCommandBuffer);
+    vkCmdCopyBufferToImage(vkCommandBuffer, srcBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &vkBufferImageCopy);
+    vlkEndCommandBuffer(vkCommandBuffer, true);
 }
 
 void vlkDestroyImage(const VkImage& vkImage) {
@@ -317,8 +334,10 @@ void vlkBeginCommandBuffer(const VkCommandBuffer& vkCommandBuffer, VkCommandBuff
     vkBeginCommandBuffer(vkCommandBuffer, &beginInfo);
 }
 
-void vlkEndCommandBuffer(const VkCommandBuffer& vkCommandBuffer) {
+void vlkEndCommandBuffer(const VkCommandBuffer& vkCommandBuffer, bool submit) {
     vkEndCommandBuffer(vkCommandBuffer);
+    if(submit)
+      vlkQueueSubmit(vkCommandBuffer);
 }
 
 void vlkQueueSubmit(const VkCommandBuffer& vkCommandBuffer) {
@@ -523,6 +542,100 @@ uint32_t vlkFindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties
         }
     }
     return 0;
+}
+
+void FlipVertical(unsigned char* data, unsigned int padWidth, unsigned int height) {
+    std::vector<unsigned char> srcPixels(padWidth * height);
+    memcpy(&srcPixels[0], data, padWidth * height);
+    unsigned char* pSrcRow = 0;
+    unsigned char* pDestRow = 0;
+    for (unsigned int i = 0; i < height; ++i) {
+        pSrcRow = &srcPixels[(height - 1 - i) * padWidth];
+        pDestRow = &data[i * padWidth];
+        memcpy(pDestRow, pSrcRow, padWidth);
+    }
+}
+
+VkCommandBuffer beginSingleTimeCommands() {
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandPool = vlkContext.vkCommandPool;
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(vlkContext.vkDevice, &allocInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    return commandBuffer;
+}
+
+void endSingleTimeCommands(VkCommandBuffer commandBuffer) {
+    vkEndCommandBuffer(commandBuffer);
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(vlkContext.vkQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(vlkContext.vkQueue);
+
+    vkFreeCommandBuffers(vlkContext.vkDevice, vlkContext.vkCommandPool, 1, &commandBuffer);
+}
+
+void vlkReadImageFile(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, const char* fileName, int& width, int& height, const bool flipVertical) {
+    int numComponents;
+    unsigned char* imageData = SOIL_load_image(fileName, &width, &height, &numComponents, SOIL_LOAD_AUTO);
+
+    if (numComponents == 3) {
+
+        unsigned char* bytesNew = (unsigned char*)malloc(width * height * 4);
+
+        for (unsigned int i = 0, k = 0; i < static_cast<unsigned int>(width * height * 4); i = i + 4, k = k + 3) {
+            bytesNew[i] = imageData[k];
+            bytesNew[i + 1] = imageData[k + 1];
+            bytesNew[i + 2] = imageData[k + 2];
+            bytesNew[i + 3] = 255;
+        }
+
+        SOIL_free_image_data(imageData);
+        imageData = bytesNew;
+        numComponents = 4;
+    }
+    if (flipVertical)
+        FlipVertical(imageData, numComponents * width, height);
+
+    VkDeviceSize imageSize = width * height * numComponents;
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+   
+    vlkCreateBuffer(stagingBuffer, stagingBufferMemory, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);    
+    vlkMapBuffer(stagingBufferMemory, reinterpret_cast<const void*>(imageData), imageSize);
+    vlkCreateImage(vkImage, vkDeviceMemory, width, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_LINEAR, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    
+    const VkCommandBuffer& vkCommandBuffer = vlkContext.vkCommandBuffer;
+    vlkBeginCommandBuffer(vkCommandBuffer);
+    vlkTransitionImageLayout(vkCommandBuffer, vkImage, VK_IMAGE_ASPECT_COLOR_BIT,
+                             VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                             VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT,
+                             VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+    vlkEndCommandBuffer(vkCommandBuffer, true);
+    vlkCopyBufferToImage(stagingBuffer, vkImage, static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+
+    vlkBeginCommandBuffer(vkCommandBuffer);
+    vlkTransitionImageLayout(vkCommandBuffer, vkImage, VK_IMAGE_ASPECT_COLOR_BIT,
+                             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                             VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                             VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+    vlkEndCommandBuffer(vkCommandBuffer, true);
+    vkDestroyBuffer(vlkContext.vkDevice, stagingBuffer, nullptr);
+    vkFreeMemory(vlkContext.vkDevice, stagingBufferMemory, nullptr);
 }
 
 bool VlkContext::createVkDevice(VlkContext& vlkContext, void* window){
@@ -818,7 +931,7 @@ void VlkContext::createTexture() {
     createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     createInfo.tiling = VK_IMAGE_TILING_LINEAR;
     createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    createInfo.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+    createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     createInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
 
     VmaAllocationCreateInfo allocInfo{};
@@ -926,6 +1039,7 @@ void VlkContext::createPipelineLayout(const VkDevice& vkDevice) {
     createInfo.pSetLayouts = &descriptorSetLayout;
     createInfo.pushConstantRangeCount = 1;
     createInfo.pPushConstantRanges = &pushConstantRange;
+
 
     vkCreatePipelineLayout(vkDevice, &createInfo, nullptr, &pipelineLayout);
 }

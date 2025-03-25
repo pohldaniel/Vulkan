@@ -4,7 +4,8 @@
 #include <imgui_internal.h>
 
 #include <vulkan/vulkan.h>
-#include "Vulkan/VlkContext.h"
+#include <Vulkan/VlkContext.h>
+#include <engine/Material.h>
 
 #include "Default.h"
 #include "Application.h"
@@ -36,6 +37,26 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 	vlkMapBuffer(m_srcIndexBufferMemory, reinterpret_cast<const void*>(m_model.getIndexBuffer().data()), size);
 	vlkCreateBuffer(m_dstIndexBuffer, m_dstIndexBufferMemory, size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	vlkCopyBuffer(m_srcIndexBuffer, m_dstIndexBuffer, size);
+
+	const std::vector<Material>& materials = Material::GetMaterials();
+	int width, height;
+	vlkReadImageFile(textureImage, textureImageMemory, materials[0].getTextures()[0].c_str(), width, height, true);
+	vlkCreateImageView(textureView, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, { VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY });
+	
+	VkDescriptorImageInfo imageInfo = {};
+	imageInfo.sampler = vlkContext.sampler;
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	imageInfo.imageView = textureView;
+
+	VkWriteDescriptorSet textureDescriptorWrite = {};
+	textureDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	textureDescriptorWrite.dstSet = vlkContext.descriptorSet;
+	textureDescriptorWrite.dstBinding = 2;
+	textureDescriptorWrite.descriptorCount = 1;
+	textureDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	textureDescriptorWrite.pImageInfo = &imageInfo;
+
+	vkUpdateDescriptorSets(vlkContext.vkDevice, 1, &textureDescriptorWrite, 0, VK_NULL_HANDLE);
 }
 
 Default::~Default() {

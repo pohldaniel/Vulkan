@@ -38,7 +38,7 @@ Entity::Entity(VlkSwapchainElement* element, float x, float y)
     VkWriteDescriptorSet descriptorWrite{};
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrite.dstSet = element->descriptorSet;
+    descriptorWrite.dstSet = ctx->descriptorSet;
     descriptorWrite.dstBinding = 0;
     descriptorWrite.dstArrayElement = descriptorIndex;
     descriptorWrite.descriptorCount = 1;
@@ -75,7 +75,7 @@ void Entity::createMVP() {
     VkWriteDescriptorSet descriptorWrite{};
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrite.dstSet = element->descriptorSet;
+    descriptorWrite.dstSet = ctx->descriptorSet;
     descriptorWrite.dstBinding = 1;
     descriptorWrite.dstArrayElement = descriptorIndex;
     descriptorWrite.descriptorCount = 1;
