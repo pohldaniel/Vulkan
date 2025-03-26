@@ -102,6 +102,12 @@
     <ClInclude Include="engine\Material.h">
       <Filter>engine</Filter>
     </ClInclude>
+    <ClInclude Include="Vulkan\VlkBuffer.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="Vulkan\VlkMesh.h">
+      <Filter>Vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\Application.cpp">
@@ -160,6 +166,12 @@
     </ClCompile>
     <ClCompile Include="engine\Material.cpp">
       <Filter>engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Vulkan\VlkBuffer.cpp">
+      <Filter>Vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="Vulkan\VlkMesh.cpp">
+      <Filter>Vulkan</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

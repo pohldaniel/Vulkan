@@ -2,6 +2,7 @@
 #include "VlkContext.h"
 #include "VlkSwapchain.h"
 #include "VlkSwapchainElement.h"
+
 #include "entity.h"
 
 Entity::Entity(VlkSwapchainElement* element, float x, float y)
@@ -9,43 +10,6 @@ Entity::Entity(VlkSwapchainElement* element, float x, float y)
     , element(element)
     , descriptorIndex(element->nextUniformIndex++)
 {
-    VkResult result;
-
-    VkBufferCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    createInfo.size = 5 * sizeof(float);
-    createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    VmaAllocationCreateInfo allocInfo{};
-    allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-    vmaCreateBuffer(ctx->memoryAllocator,&createInfo,&allocInfo,&uniform.buffer, &uniform.allocation,nullptr);
-
-    vmaMapMemory(ctx->memoryAllocator, uniform.allocation, reinterpret_cast<void**>(&uniformMapping));
-
-    uniformMapping->x = x;
-    uniformMapping->y = y;
-    uniformMapping->rotation = 0;
-    uniformMapping->scale = 0.1;
-    uniformMapping->aspect = element->swapchain->width / static_cast<float>(element->swapchain->height);
-
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = uniform.buffer;
-    bufferInfo.offset = 0;
-    bufferInfo.range = VK_WHOLE_SIZE;
-
-    VkWriteDescriptorSet descriptorWrite{};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrite.dstSet = ctx->descriptorSet;
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.dstArrayElement = descriptorIndex;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pBufferInfo = &bufferInfo;
-
-    vkUpdateDescriptorSets(ctx->vkDevice, 1, &descriptorWrite, 0, nullptr);
-
     createMVP();
 }
 
@@ -76,7 +40,7 @@ void Entity::createMVP() {
     descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     descriptorWrite.dstSet = ctx->descriptorSet;
-    descriptorWrite.dstBinding = 1;
+    descriptorWrite.dstBinding = 0;
     descriptorWrite.dstArrayElement = descriptorIndex;
     descriptorWrite.descriptorCount = 1;
     descriptorWrite.pBufferInfo = &bufferInfo;
@@ -86,8 +50,8 @@ void Entity::createMVP() {
 
 Entity::~Entity()
 {
-    vmaUnmapMemory(ctx->memoryAllocator, uniform.allocation);
-    vmaDestroyBuffer(ctx->memoryAllocator, uniform.buffer, uniform.allocation);
+    //vmaUnmapMemory(ctx->memoryAllocator, uniform.allocation);
+    //vmaDestroyBuffer(ctx->memoryAllocator, uniform.buffer, uniform.allocation);
 }
 
 void Entity::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount) {
@@ -161,7 +125,7 @@ void Entity::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const 
     vkCmdSetColorWriteMaskEXT(element->commandBuffer, 0, 1, &colorWriteMask);
 
     // Uniform
-    uniformMapping->rotation += 0.01f;
+    //uniformMapping->rotation += 0.01f;
 
     uniformMappingMVP->model  = ubo.model;
     uniformMappingMVP->view = ubo.view;

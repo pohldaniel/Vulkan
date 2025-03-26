@@ -95,6 +95,6 @@ extern "C" {
     uint32_t vlkFindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
     void vlkReadImageFile(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, const char* fileName, int& width, int& height, const bool flipVertical = false);
-
+    void vlkBindImageViewToDescriptorSet(const VkImageView& vkImageView, const VkDescriptorSet& vkDescriptorSet, uint32_t dstBinding);
    
 };

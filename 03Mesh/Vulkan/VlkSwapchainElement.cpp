@@ -3,7 +3,7 @@
 #include "VlkContext.h"
 #include "VlkSwapchain.h"
 #include "VlkSwapchainElement.h"
-
+#include "VlkTexture.h"
 
 VlkSwapchainElement::VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image, VkImage depthImage) : ctx(swapchain->ctx), image(image), depthImage(depthImage), swapchain(swapchain){
 

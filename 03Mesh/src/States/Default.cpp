@@ -39,24 +39,22 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 	vlkCopyBuffer(m_srcIndexBuffer, m_dstIndexBuffer, size);
 
 	const std::vector<Material>& materials = Material::GetMaterials();
-	int width, height;
-	vlkReadImageFile(textureImage, textureImageMemory, materials[0].getTextures()[0].c_str(), width, height, true);
-	vlkCreateImageView(textureView, textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, { VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY });
-	
-	VkDescriptorImageInfo imageInfo = {};
-	imageInfo.sampler = vlkContext.sampler;
-	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-	imageInfo.imageView = textureView;
 
-	VkWriteDescriptorSet textureDescriptorWrite = {};
-	textureDescriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-	textureDescriptorWrite.dstSet = vlkContext.descriptorSet;
-	textureDescriptorWrite.dstBinding = 2;
-	textureDescriptorWrite.descriptorCount = 1;
-	textureDescriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-	textureDescriptorWrite.pImageInfo = &imageInfo;
+	for (const Material& material : materials) {
+		m_textures.push_back(VlkTexture());
+		m_textures.back().loadFromFile(material.textures[0], true);
+		m_textures.back().setDescriptorSet(vlkContext.descriptorSet);
+		
+	}
+	m_textures.back().bind(1u);
 
-	vkUpdateDescriptorSets(vlkContext.vkDevice, 1, &textureDescriptorWrite, 0, VK_NULL_HANDLE);
+	/*for (ObjMesh* mesh : m_model.getMeshes()) {
+		m_vertexBuffer.push_back(VlkBuffer());
+		m_vertexBuffer.back().createBuffer(reinterpret_cast<const void*>(mesh->getVertexBuffer().data()), sizeof(float) * mesh->getVertexBuffer().size());
+
+		m_indexBuffer.push_back(VlkBuffer());
+		m_indexBuffer.back().createBuffer(reinterpret_cast<const void*>(mesh->getIndexBuffer().data()), sizeof(unsigned int) * mesh->getIndexBuffer().size());
+	}*/
 }
 
 Default::~Default() {

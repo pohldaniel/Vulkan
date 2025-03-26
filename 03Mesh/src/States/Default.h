@@ -9,6 +9,8 @@
 #include <States/StateMachine.h>
 
 #include <Vulkan/Data.h>
+#include <Vulkan/VlkTexture.h>
+#include <Vulkan/VlkBuffer.h>
 
 class Default : public State, public MouseEventListener, public KeyboardEventListener {
 
@@ -55,4 +57,8 @@ private:
 	VkImage textureImage;
 	VkDeviceMemory textureImageMemory;
 	VkImageView textureView;
+
+	std::vector<VlkTexture> m_textures;
+	std::vector<VlkBuffer> m_vertexBuffer;
+	std::vector<VlkBuffer> m_indexBuffer;
 };

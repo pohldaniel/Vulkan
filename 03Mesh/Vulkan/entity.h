@@ -33,8 +33,8 @@ public:
     VlkContext* ctx;
     VlkSwapchainElement* element;
 
-    VmaBuffer uniform;
-    EntityUniform* uniformMapping;
+    //VmaBuffer uniform;
+    //EntityUniform* uniformMapping;
 
     VmaBuffer uniformMVP;
     UniformBufferObject* uniformMappingMVP;

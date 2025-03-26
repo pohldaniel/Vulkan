@@ -638,6 +638,23 @@ void vlkReadImageFile(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, const ch
     vkFreeMemory(vlkContext.vkDevice, stagingBufferMemory, nullptr);
 }
 
+void vlkBindImageViewToDescriptorSet(const VkImageView& vkImageView, const VkDescriptorSet& vkDescriptorSet, uint32_t dstBinding) {  
+    VkDescriptorImageInfo vkDescriptorImageInfo = {};
+    vkDescriptorImageInfo.sampler = vlkContext.sampler;
+    vkDescriptorImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    vkDescriptorImageInfo.imageView = vkImageView;
+
+    VkWriteDescriptorSet vkWriteDescriptorSet = {};
+    vkWriteDescriptorSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    vkWriteDescriptorSet.dstSet = vkDescriptorSet;
+    vkWriteDescriptorSet.dstBinding = dstBinding;
+    vkWriteDescriptorSet.descriptorCount = 1;
+    vkWriteDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    vkWriteDescriptorSet.pImageInfo = &vkDescriptorImageInfo;
+
+    vkUpdateDescriptorSets(vlkContext.vkDevice, 1, &vkWriteDescriptorSet, 0, VK_NULL_HANDLE);
+}
+
 bool VlkContext::createVkDevice(VlkContext& vlkContext, void* window){
 	/*uint32_t amountOfInstanceLayers = 0;
 	vkEnumerateInstanceLayerProperties(&amountOfInstanceLayers, NULL);
@@ -988,24 +1005,18 @@ void VlkContext::createDescriptorPool(const VkDevice& vkDevice) {
 void VlkContext::createDescriptorSetLayout(const VkDevice& vkDevice) {
     VkResult result;
 
-    VkDescriptorSetLayoutBinding bindings[3]{};
+    VkDescriptorSetLayoutBinding bindings[2]{};
     bindings[0].binding = 0;
     bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     bindings[0].descriptorCount = maxDescriptorCount;
     bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
     bindings[1].binding = 1;
-    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     bindings[1].descriptorCount = maxDescriptorCount;
-    bindings[1].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-    bindings[2].binding = 2;
-    bindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    bindings[2].descriptorCount = maxDescriptorCount;
-    bindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     VkDescriptorBindingFlags bindingFlags[] = {
-        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
         VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
         VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
     };
