@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "entity.h"
+#include "VlkMesh.h"
 
 class VlkSwapchain;
 struct VlkContext;
@@ -16,7 +17,7 @@ public:
     VlkSwapchainElement& operator=(const VlkSwapchainElement& rhs) = delete;
     VlkSwapchainElement& operator=(VlkSwapchainElement&& rhs) = delete;
 
-    void draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
+    void draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes);
 
     VlkContext* ctx;
     VlkSwapchain* swapchain;
@@ -43,6 +44,6 @@ public:
     VkViewport viewport;
     VkRect2D scissor;
 
-    std::vector<Entity*> entities;
 
+    std::vector<Entity*> entities;
 };

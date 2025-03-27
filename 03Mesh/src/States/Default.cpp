@@ -5,6 +5,8 @@
 
 #include <vulkan/vulkan.h>
 #include <Vulkan/VlkContext.h>
+#include <Vulkan/VlkSwapchain.h>
+#include <Vulkan/VlkSwapchainElement.h>
 #include <engine/Material.h>
 
 #include "Default.h"
@@ -24,17 +26,17 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 	m_camera.setRotationSpeed(0.1f);
 	m_camera.setMovingSpeed(10.0f);
 
-	m_model.loadModel("res/models/dragon/dragon.obj", glm::vec3(1.0f, 0.0f, 0.0f), -90.0f, glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, true);
+	m_model.loadModel("res/models/dragon/dragon.obj", glm::vec3(1.0f, 0.0f, 0.0f), -90.0f, glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, false);
 
-	uint32_t size = sizeof(float) * m_model.getVertexBuffer().size();
+	uint32_t size = sizeof(float) * m_model.getMesh(0)->getVertexBuffer().size();
 	vlkCreateBuffer(m_srcVertexBuffer, m_srcVertexBufferMemory, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	vlkMapBuffer(m_srcVertexBufferMemory, reinterpret_cast<const void*>(m_model.getVertexBuffer().data()), size);
+	vlkMapBuffer(m_srcVertexBufferMemory, reinterpret_cast<const void*>(m_model.getMesh(0)->getVertexBuffer().data()), size);
 	vlkCreateBuffer(m_dstVertexBuffer, m_dstVertexBufferMemory, size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	vlkCopyBuffer(m_srcVertexBuffer, m_dstVertexBuffer, size);
 
-	size = sizeof(unsigned int) * m_model.getIndexBuffer().size();
+	size = sizeof(unsigned int) * m_model.getMesh(0)->getIndexBuffer().size();
 	vlkCreateBuffer(m_srcIndexBuffer, m_srcIndexBufferMemory, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	vlkMapBuffer(m_srcIndexBufferMemory, reinterpret_cast<const void*>(m_model.getIndexBuffer().data()), size);
+	vlkMapBuffer(m_srcIndexBufferMemory, reinterpret_cast<const void*>(m_model.getMesh(0)->getIndexBuffer().data()), size);
 	vlkCreateBuffer(m_dstIndexBuffer, m_dstIndexBufferMemory, size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	vlkCopyBuffer(m_srcIndexBuffer, m_dstIndexBuffer, size);
 
@@ -46,15 +48,19 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 		m_textures.back().setDescriptorSet(vlkContext.descriptorSet);
 		
 	}
-	m_textures.back().bind(1u);
-
-	/*for (ObjMesh* mesh : m_model.getMeshes()) {
+	m_textures[0].bind(1u);
+	
+	for (ObjMesh* mesh : m_model.getMeshes()) {
 		m_vertexBuffer.push_back(VlkBuffer());
-		m_vertexBuffer.back().createBuffer(reinterpret_cast<const void*>(mesh->getVertexBuffer().data()), sizeof(float) * mesh->getVertexBuffer().size());
-
+		m_vertexBuffer.back().createBufferVertex(reinterpret_cast<const void*>(mesh->getVertexBuffer().data()), sizeof(float) * mesh->getVertexBuffer().size());
+			
 		m_indexBuffer.push_back(VlkBuffer());
-		m_indexBuffer.back().createBuffer(reinterpret_cast<const void*>(mesh->getIndexBuffer().data()), sizeof(unsigned int) * mesh->getIndexBuffer().size());
-	}*/
+		m_indexBuffer.back().createBufferIndex(reinterpret_cast<const void*>(mesh->getIndexBuffer().data()), sizeof(unsigned int) * mesh->getIndexBuffer().size());
+		
+		m_meshes.push_back(new VlkMesh(m_vertexBuffer.back(), m_indexBuffer.back(), mesh->getIndexBuffer().size()));
+		m_meshes.back()->createMVP(vlkContext.memoryAllocator, vlkContext.descriptorSet);
+		m_meshes.back()->setShader(vlkContext.shader);
+	}
 }
 
 Default::~Default() {
@@ -129,10 +135,10 @@ void Default::update() {
 void Default::render() {
 	if (m_drawUi)
 		renderUi();
-
-	vlkDraw(m_dstVertexBuffer, m_dstIndexBuffer, static_cast<uint32_t>(m_model.getIndexBuffer().size()));
-
-	
+	//vlkDraw(m_meshes);
+	for (std::list<VlkMesh*>::const_iterator it = m_meshes.begin(); it != m_meshes.end(); ++it) {
+		vlkDrawMesh(*it);
+	}
 }
 
 void Default::OnMouseMotion(Event::MouseMoveEvent& event) {

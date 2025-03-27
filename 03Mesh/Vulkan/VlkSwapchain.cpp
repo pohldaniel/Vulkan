@@ -37,9 +37,13 @@ VlkSwapchain::~VlkSwapchain(){
     vkDestroySwapchainKHR(ctx->vkDevice, swapchain, VK_NULL_HANDLE);
 }
 
-bool VlkSwapchain::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount){
-    VkResult result;
+bool VlkSwapchain::drawMesh(const UniformBufferObject& ubo, VlkMesh* mesh) {
+    return draw(ubo, { mesh });
+}
 
+bool VlkSwapchain::draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes){
+    VkResult result;
+ 
     const VlkSwapchainElement* currentElement = elements.at(currentFrame);
 
     vkWaitForFences(ctx->vkDevice, 1, &currentElement->fence, true, std::numeric_limits<uint64_t>::max());
@@ -72,7 +76,7 @@ bool VlkSwapchain::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, 
 
     vkResetFences(ctx->vkDevice, 1, &currentElement->fence);
 
-    element->draw(ubo, vertex, index, drawCount);
+    element->draw(ubo, meshes);
 
     VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 

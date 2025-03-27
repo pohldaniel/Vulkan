@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <list>
 #include <Vulkan/vulkan.h>
 #include "VlkSwapchainElement.h"
 
@@ -16,7 +17,8 @@ public:
     VlkSwapchain& operator=(const VlkSwapchain& rhs) = delete;
     VlkSwapchain& operator=(VlkSwapchain&& rhs) = delete;
 
-    bool draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
+    bool draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes);
+    bool drawMesh(const UniformBufferObject& ubo, VlkMesh* mesh);
 
     VlkContext* ctx;
 

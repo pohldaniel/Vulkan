@@ -1,10 +1,12 @@
 #pragma once
 #include <vector>
+#include <list>
 #include <vulkan/vulkan.h>
 #include <shaderc/shaderc.h>
 #include "Data.h"
 
 class VlkSwapchain;
+class VlkMesh;
 
 struct VlkContext {
 
@@ -62,7 +64,8 @@ extern "C" {
     void vlkResize();
     void vlkToggleVerticalSync();
     void vlkToggleWireframe();
-    void vlkDraw(const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
+    void vlkDraw(const std::list<VlkMesh*>& meshes);
+    void vlkDrawMesh(VlkMesh* mesh);
 
     void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size);
     void vlkCreateBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, uint32_t size, VkBufferUsageFlags vkBufferUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags);

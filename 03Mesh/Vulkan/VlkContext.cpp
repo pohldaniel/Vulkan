@@ -9,6 +9,7 @@
 #include "VlkExtension.h"
 #include "VlkContext.h"
 #include "VlkSwapchain.h"
+#include "VlkMesh.h"
 
 VlkContext vlkContext = {};
 
@@ -139,8 +140,12 @@ void vlkToggleWireframe() {
         vlkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
 }
 
-void vlkDraw(const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount) {
-    vlkContext.swapchain->draw(vlkContext.ubo, vertex, index, drawCount);
+void vlkDraw(const std::list<VlkMesh*>& meshes) {
+    vlkContext.swapchain->draw(vlkContext.ubo, meshes);
+}
+
+void vlkDrawMesh(VlkMesh* mesh) {
+    vlkContext.swapchain->drawMesh(vlkContext.ubo, mesh);
 }
 
 void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size) {

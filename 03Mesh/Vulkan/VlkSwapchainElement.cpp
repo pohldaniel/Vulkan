@@ -75,12 +75,12 @@ VlkSwapchainElement::VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image,
 
         scissor = { { 0, 0 },{ swapchain->width, swapchain->height } };
     }
-
     entities.push_back(new Entity(this, 0.0f, 0.0f));
+
 }
 
 VlkSwapchainElement::~VlkSwapchainElement(){
-    for (Entity* entity : entities){
+    for (Entity* entity : entities) {
         delete entity;
     }
 
@@ -93,7 +93,7 @@ VlkSwapchainElement::~VlkSwapchainElement(){
     //vkFreeDescriptorSets(ctx->vkDevice, ctx->descriptorPool, 1, &ctx->descriptorSet);
 }
 
-void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount){
+void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes){
     vlkBeginCommandBuffer(commandBuffer);
 
     vlkTransitionImageLayout(commandBuffer, image, VK_IMAGE_ASPECT_COLOR_BIT,
@@ -123,10 +123,13 @@ void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const VkBuffer& v
 
     // Bind global descriptor set
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 0, 1, &ctx->descriptorSet, 0, NULL);
-    // Draw entities
-    for (Entity* entity : entities){
-        entity->draw(ubo, vertex, index, drawCount);
+   
+
+    for (std::list<VlkMesh*>::const_iterator it = meshes.begin(); it != meshes.end(); ++it) {
+        entities[0]->draw(ubo, (*it)->vertex.m_vkBuffer, (*it)->index.m_vkBuffer, (*it)->drawCount);
+        //(*it)->draw(commandBuffer, ubo);
     }
+
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
     // End rendering
     vkCmdEndRendering(commandBuffer);

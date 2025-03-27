@@ -125,8 +125,6 @@ void Entity::draw(const UniformBufferObject& ubo, const VkBuffer& vertex, const 
     vkCmdSetColorWriteMaskEXT(element->commandBuffer, 0, 1, &colorWriteMask);
 
     // Uniform
-    //uniformMapping->rotation += 0.01f;
-
     uniformMappingMVP->model  = ubo.model;
     uniformMappingMVP->view = ubo.view;
     uniformMappingMVP->proj = ubo.proj;

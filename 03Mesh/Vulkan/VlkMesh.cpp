@@ -1,12 +1,25 @@
+#include <iostream>
 #include <Vulkan/VlkContext.h>
 #include "Data.h"
 #include "VlkMesh.h"
 
-void VlkMesh::draw(const VkCommandBuffer& vkCommandBuffer, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount) {
+VlkMesh::VlkMesh(const VlkBuffer& vertex, const VlkBuffer& index, const uint32_t drawCount) : vertex(vertex), index(index), drawCount(drawCount) {
+
+}
+
+VlkMesh::VlkMesh(VlkMesh const& rhs) : vertex(rhs.vertex), index(rhs.index), drawCount(rhs.drawCount), m_shader(rhs.m_shader), uniformMVP(rhs.uniformMVP){
+
+}
+
+VlkMesh::VlkMesh(VlkMesh&& rhs) : vertex(rhs.vertex), index(rhs.index), drawCount(rhs.drawCount), m_shader(rhs.m_shader), uniformMVP(rhs.uniformMVP) {
+
+}
+
+void VlkMesh::draw(const VkCommandBuffer& vkCommandBuffer, const UniformBufferObject& ubo) const {
     // Mesh
     VkDeviceSize meshOffset = 0;
-    vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, &vertex, &meshOffset);
-    vkCmdBindIndexBuffer(vkCommandBuffer, index, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, &vertex.m_vkBuffer, &meshOffset);
+    vkCmdBindIndexBuffer(vkCommandBuffer, index.m_vkBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     // Shader
     VkShaderStageFlagBits stages[] = {
@@ -66,6 +79,25 @@ void VlkMesh::draw(const VkCommandBuffer& vkCommandBuffer, const VkBuffer& verte
     vkCmdSetColorBlendEquationEXT(vkCommandBuffer, 0, 1, &colorBlendEquation);
     VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     vkCmdSetColorWriteMaskEXT(vkCommandBuffer, 0, 1, &colorWriteMask);
+
+    // Uniform
+    uniformMappingMVP->model = ubo.model;
+    uniformMappingMVP->view = ubo.view;
+    uniformMappingMVP->proj = ubo.proj;
+
+    std::cout << uniformMappingMVP->proj[0][0] << "  " << uniformMappingMVP->proj[0][1] << "  " << uniformMappingMVP->proj[0][2] << "  " << uniformMappingMVP->proj[0][3] << std::endl;
+    std::cout << uniformMappingMVP->proj[1][0] << "  " << uniformMappingMVP->proj[1][1] << "  " << uniformMappingMVP->proj[1][2] << "  " << uniformMappingMVP->proj[1][3] << std::endl;
+    std::cout << uniformMappingMVP->proj[2][0] << "  " << uniformMappingMVP->proj[2][1] << "  " << uniformMappingMVP->proj[2][2] << "  " << uniformMappingMVP->proj[2][3] << std::endl;
+    std::cout << uniformMappingMVP->proj[3][0] << "  " << uniformMappingMVP->proj[3][1] << "  " << uniformMappingMVP->proj[3][2] << "  " << uniformMappingMVP->proj[3][3] << std::endl;
+    // Push constants
+    int ids[] = {
+        1,
+        0
+    };
+
+    vkCmdPushConstants(vkCommandBuffer, vlkContext.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ids), ids);
+
+    vkCmdDrawIndexed(vkCommandBuffer, drawCount, 1, 0, 0, 0);
 }
 
 void VlkMesh::setShader(std::vector<VkShaderEXT>& shader) {

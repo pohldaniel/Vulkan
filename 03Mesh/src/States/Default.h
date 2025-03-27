@@ -11,6 +11,7 @@
 #include <Vulkan/Data.h>
 #include <Vulkan/VlkTexture.h>
 #include <Vulkan/VlkBuffer.h>
+#include <Vulkan/VlkMesh.h>
 
 class Default : public State, public MouseEventListener, public KeyboardEventListener {
 
@@ -59,6 +60,13 @@ private:
 	VkImageView textureView;
 
 	std::vector<VlkTexture> m_textures;
-	std::vector<VlkBuffer> m_vertexBuffer;
-	std::vector<VlkBuffer> m_indexBuffer;
+	std::list<VlkBuffer> m_vertexBuffer;
+	std::list<VlkBuffer> m_indexBuffer;
+	std::list<VlkMesh*> m_meshes;
+
+	VlkMesh* m_mesh;
+
+	VlkBuffer _vertex;
+	VlkBuffer _index;
+
 };
