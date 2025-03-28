@@ -95,10 +95,16 @@ void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const std::list<V
     vkCmdSetDepthBiasEnable(commandBuffer, false);
     vkCmdSetLineWidth(commandBuffer, 2.0f);
  
+    // Uniform
+    vlkContext.uniformMappingMVP->model = ubo.model;
+    vlkContext.uniformMappingMVP->view = ubo.view;
+    vlkContext.uniformMappingMVP->proj = ubo.proj;
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 0, 1, &vlkContext.m_vkDescriptorSet, 0, NULL);
+
     // Bind global descriptor set
     for (std::pair<std::list<VlkMesh*>::const_iterator, std::vector<VlkTexture>::iterator> i(meshes.begin(), textures.begin());
         i.first != meshes.end(); ++i.first, ++i.second) {
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 0, 1, &(*i.second).m_vkDescriptorSet, 0, NULL);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 1, 1, &(*i.second).m_vkDescriptorSet, 0, NULL);
         draw(commandBuffer, ubo, (*i.first)->vertex.m_vkBuffer, (*i.first)->index.m_vkBuffer, (*i.first)->drawCount, &(*i.second));
     }
     
@@ -185,10 +191,7 @@ void VlkSwapchainElement::draw(const VkCommandBuffer& vkCommandbuffer, const Uni
     VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     vkCmdSetColorWriteMaskEXT(vkCommandbuffer, 0, 1, &colorWriteMask);
 
-    // Uniform
-    texture->uniformMappingMVP->model = ubo.model;
-    texture->uniformMappingMVP->view = ubo.view;
-    texture->uniformMappingMVP->proj = ubo.proj;
+    
 
     // Push constants
     int ids[] = { descriptorIndex,0 };

@@ -49,21 +49,23 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 		
 	}
 
-	vlkAllocateDescriptorSets(m_textures[0].m_vkDescriptorSet);
-	createMVP(m_textures[0].m_vkDescriptorSet, m_textures[0].m_vkImageView, m_textures[0].uniformMVP, m_textures[0].uniformMappingMVP);
-	vlkBindImageViewToDescriptorSet(m_textures[0].m_vkImageView, m_textures[0].m_vkDescriptorSet, 1);
+	vlkAllocateDescriptorSets(vlkContext.m_vkDescriptorSet, vlkContext.descriptorSetLayout[0]);
+	createMVP(vlkContext.m_vkDescriptorSet, vlkContext.uniformMVP, vlkContext.uniformMappingMVP);
 
-	vlkAllocateDescriptorSets(m_textures[1].m_vkDescriptorSet);
-	createMVP(m_textures[1].m_vkDescriptorSet, m_textures[1].m_vkImageView, m_textures[1].uniformMVP, m_textures[1].uniformMappingMVP);
-	vlkBindImageViewToDescriptorSet(m_textures[1].m_vkImageView, m_textures[1].m_vkDescriptorSet, 1);
+	vlkAllocateDescriptorSets(m_textures[0].m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
+	vlkBindImageViewToDescriptorSet(m_textures[0].m_vkImageView, m_textures[0].m_vkDescriptorSet, 0);
 
-	vlkAllocateDescriptorSets(m_textures[2].m_vkDescriptorSet);
-	createMVP(m_textures[2].m_vkDescriptorSet, m_textures[2].m_vkImageView, m_textures[2].uniformMVP, m_textures[2].uniformMappingMVP);
-	vlkBindImageViewToDescriptorSet(m_textures[2].m_vkImageView, m_textures[2].m_vkDescriptorSet, 1);
+	vlkAllocateDescriptorSets(m_textures[1].m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
+	//createMVP(m_textures[1].m_vkDescriptorSet, m_textures[1].uniformMVP, m_textures[1].uniformMappingMVP);
+	vlkBindImageViewToDescriptorSet(m_textures[1].m_vkImageView, m_textures[1].m_vkDescriptorSet, 0);
 
-	vlkAllocateDescriptorSets(m_textures[3].m_vkDescriptorSet);
-	createMVP(m_textures[3].m_vkDescriptorSet, m_textures[3].m_vkImageView, m_textures[3].uniformMVP, m_textures[3].uniformMappingMVP);
-	vlkBindImageViewToDescriptorSet(m_textures[3].m_vkImageView, m_textures[3].m_vkDescriptorSet, 1);
+	vlkAllocateDescriptorSets(m_textures[2].m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
+	//createMVP(m_textures[2].m_vkDescriptorSet, m_textures[2].uniformMVP, m_textures[2].uniformMappingMVP);
+	vlkBindImageViewToDescriptorSet(m_textures[2].m_vkImageView, m_textures[2].m_vkDescriptorSet, 0);
+
+	vlkAllocateDescriptorSets(m_textures[3].m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
+	//createMVP(m_textures[3].m_vkDescriptorSet, m_textures[3].uniformMVP, m_textures[3].uniformMappingMVP);
+	vlkBindImageViewToDescriptorSet(m_textures[3].m_vkImageView, m_textures[3].m_vkDescriptorSet, 0);
 
 
 

@@ -84,37 +84,24 @@ void vlkInit(void* window) {
     vlkContext.createVkDevice(vlkContext, window);
 	
     vkGetDeviceQueue(vlkContext.vkDevice, vlkContext.queueFamilyIndex, 0, &vlkContext.vkQueue);
+    
     vlkCreateCommandPool(vlkContext.vkCommandPool);
     vlkCreateCommandBuffer(vlkContext.vkCommandBuffer);
-
-
     vlkCreateDescriptorPool(vlkContext.descriptorPool);
-    vlkCreateDescriptorSetLayout(vlkContext.descriptorSetLayout);
 
-    vlkContext.descriptorSets.resize(4);
+    vlkContext.descriptorSetLayout.resize(2);
 
-    vlkAllocateDescriptorSets(vlkContext.descriptorSets[0]);
-    vlkAllocateDescriptorSets(vlkContext.descriptorSets[1]);
-    vlkAllocateDescriptorSets(vlkContext.descriptorSets[2]);
-    vlkAllocateDescriptorSets(vlkContext.descriptorSets[3]);
-
+    vlkCreateDescriptorSetLayout(vlkContext.descriptorSetLayout[0]);
+    
     vlkContext.createPushConstantRange(vlkContext.vkDevice);
     vlkContext.createPipelineLayout(vlkContext.vkDevice);
-
-
-   
+    vlkContext.createShaders(vlkContext.vkDevice);
 
     vlkCreateSampler(vlkContext.sampler);
     vlkCreateAllocator(vlkContext.memoryAllocator);
 
-    //vlkContext.createTexture();
-    //vlkCreateImageView(vlkContext.textureView, vlkContext.vmaImage.image, VK_FORMAT_B8G8R8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, { VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY });
-
-    vlkContext.createShaders(vlkContext.vkDevice); 
-    vlkContext.createMesh();
-
-    vlkContext.swapchain = new VlkSwapchain(&vlkContext, Application::Width, Application::Height, vlkContext.vkPresentModeKHR);
-   
+ 
+    vlkContext.swapchain = new VlkSwapchain(&vlkContext, Application::Width, Application::Height, vlkContext.vkPresentModeKHR);   
 }
 
 void vlkResize() {
@@ -496,8 +483,8 @@ std::vector<VkShaderEXT>& vlkCreateShader(const VkDescriptorSetLayout& vkDescrip
     vkShaderCreateInfoEXT[0].pName = "main";
     vkShaderCreateInfoEXT[0].codeSize = sizeof(uint32_t) * vertexCode.size();
     vkShaderCreateInfoEXT[0].pCode = vertexCode.data();
-    vkShaderCreateInfoEXT[0].setLayoutCount = 1;
-    vkShaderCreateInfoEXT[0].pSetLayouts = &vkDescriptorSetLayout;
+    vkShaderCreateInfoEXT[0].setLayoutCount = 2;
+    vkShaderCreateInfoEXT[0].pSetLayouts = vlkContext.descriptorSetLayout.data();
     vkShaderCreateInfoEXT[0].pushConstantRangeCount = 1;
     vkShaderCreateInfoEXT[0].pPushConstantRanges = &vkPushConstantRange;
     vkShaderCreateInfoEXT[0].nextStage = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -509,8 +496,8 @@ std::vector<VkShaderEXT>& vlkCreateShader(const VkDescriptorSetLayout& vkDescrip
     vkShaderCreateInfoEXT[1].pName = "main";
     vkShaderCreateInfoEXT[1].codeSize = sizeof(uint32_t) * fragmentCode.size();
     vkShaderCreateInfoEXT[1].pCode = fragmentCode.data();
-    vkShaderCreateInfoEXT[1].setLayoutCount = 1;
-    vkShaderCreateInfoEXT[1].pSetLayouts = &vkDescriptorSetLayout;
+    vkShaderCreateInfoEXT[1].setLayoutCount = 2;
+    vkShaderCreateInfoEXT[1].pSetLayouts = vlkContext.descriptorSetLayout.data();
     vkShaderCreateInfoEXT[1].pushConstantRangeCount = 1;
     vkShaderCreateInfoEXT[1].pPushConstantRanges = &vkPushConstantRange;
 
@@ -573,7 +560,7 @@ void vlkCreateDescriptorPool(VkDescriptorPool& vkDescriptorPool) {
 void vlkCreateDescriptorSetLayout(VkDescriptorSetLayout& vkDescriptorSetLayout) {
     const VkDevice& vkDevice = vlkContext.vkDevice;
 
-    VkDescriptorSetLayoutBinding bindings[2]{};
+    /*VkDescriptorSetLayoutBinding bindings[2]{};
     bindings[0].binding = 0;
     bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     bindings[0].descriptorCount = maxDescriptorCount;
@@ -600,12 +587,53 @@ void vlkCreateDescriptorSetLayout(VkDescriptorSetLayout& vkDescriptorSetLayout) 
     createInfo.bindingCount = sizeof(bindings) / sizeof(VkDescriptorSetLayoutBinding);
     createInfo.pBindings = bindings;
 
-    vkCreateDescriptorSetLayout(vkDevice, &createInfo, nullptr, &vkDescriptorSetLayout);
+    vkCreateDescriptorSetLayout(vkDevice, &createInfo, nullptr, &vkDescriptorSetLayout);*/
+
+    VkDescriptorSetLayoutBinding bindings = {};
+    bindings.binding = 0;
+    bindings.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bindings.descriptorCount = maxDescriptorCount;
+    bindings.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+
+    VkDescriptorBindingFlags bindingFlags[] = { VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT };
+    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo = {};
+    bindingFlagsCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+    bindingFlagsCreateInfo.pBindingFlags = bindingFlags;
+    bindingFlagsCreateInfo.bindingCount = 1;
+
+    VkDescriptorSetLayoutCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    createInfo.pNext = &bindingFlagsCreateInfo;
+    createInfo.bindingCount = 1;
+    createInfo.pBindings = &bindings;
+
+    vkCreateDescriptorSetLayout(vkDevice, &createInfo, nullptr, &vlkContext.descriptorSetLayout[0]);
+
+    VkDescriptorSetLayoutBinding _bindings = {};
+    _bindings.binding = 0;
+    _bindings.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    _bindings.descriptorCount = maxDescriptorCount;
+    _bindings.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+
+    VkDescriptorBindingFlags _bindingFlags[] = { VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT };
+    VkDescriptorSetLayoutBindingFlagsCreateInfo _bindingFlagsCreateInfo = {};
+    _bindingFlagsCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+    _bindingFlagsCreateInfo.pBindingFlags = _bindingFlags;
+    _bindingFlagsCreateInfo.bindingCount = 1;
+
+    VkDescriptorSetLayoutCreateInfo _createInfo = {};
+    _createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    _createInfo.pNext = &_bindingFlagsCreateInfo;
+    _createInfo.pBindings = &_bindings;
+    _createInfo.bindingCount = 1;
+
+    vkCreateDescriptorSetLayout(vkDevice, &_createInfo, nullptr, &vlkContext.descriptorSetLayout[1]);
 }
 
-void vlkAllocateDescriptorSets(VkDescriptorSet& vkDescriptorSet) {
+void vlkAllocateDescriptorSets(VkDescriptorSet& vkDescriptorSet, const VkDescriptorSetLayout& vkDescriptorSetLayout) {
     const VkDevice& vkDevice = vlkContext.vkDevice;
-    const VkDescriptorSetLayout& vkDescriptorSetLayout = vlkContext.descriptorSetLayout;
     const VkDescriptorPool& vkDescriptorPool = vlkContext.descriptorPool;
     
     VkDescriptorSetAllocateInfo allocInfo = {};
@@ -951,163 +979,6 @@ bool VlkContext::createVkDevice(VlkContext& vlkContext, void* window){
 	return true;
 }
 
-void VlkContext::createMesh() {
-    VkResult result;
-
-    VkBufferCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    createInfo.size = 4 * sizeof(Vertex);
-    createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    VmaAllocationCreateInfo allocInfo{};
-    allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-    vmaCreateBuffer(memoryAllocator, &createInfo, &allocInfo, &vmaBuffer.buffer, &vmaBuffer.allocation, nullptr);
-
-    Vertex* vertices = nullptr;
-    vmaMapMemory(memoryAllocator, vmaBuffer.allocation, reinterpret_cast<void**>(&vertices));
-
-    vertices[0].x = -1;
-    vertices[0].y = -1;
-    vertices[0].z = 0;
-    vertices[0].u = 0;
-    vertices[0].v = 0;
-
-    vertices[1].x = +1;
-    vertices[1].y = -1;
-    vertices[1].z = 0;
-    vertices[1].u = 1;
-    vertices[1].v = 0;
-
-    vertices[2].x = -1;
-    vertices[2].y = +1;
-    vertices[2].z = 0;
-    vertices[2].u = 0;
-    vertices[2].v = 1;
-
-    vertices[3].x = +1;
-    vertices[3].y = +1;
-    vertices[3].z = 0;
-    vertices[3].u = 1;
-    vertices[3].v = 1;
-
-    vmaUnmapMemory(memoryAllocator, vmaBuffer.allocation);
-}
-
-void VlkContext::createTexture() {
-    VkResult result;
-
-    static const int textureWidth = 8;
-    static const int textureHeight = 8;
-
-    std::vector<uint32_t> texturePixels(32 * 32, 0xffffffff);
-
-    for (int y = 0; y < textureHeight; y++) {
-        for (int x = 0; x < textureWidth; x++) {
-            if ((y % 2 == 0 && x % 2 == 0) || (y % 2 == 1 && x % 2 == 1)) {
-                texturePixels[y * textureWidth + x] = 0xff0000ff;
-            }
-        }
-    }
-
-    VkImageCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    createInfo.imageType = VK_IMAGE_TYPE_2D;
-    createInfo.extent = { textureWidth, textureHeight, 1 };
-    createInfo.mipLevels = 1;
-    createInfo.arrayLayers = 1;
-    createInfo.format = VK_FORMAT_B8G8R8A8_SRGB;
-    createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    createInfo.tiling = VK_IMAGE_TILING_LINEAR;
-    createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    createInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
-
-    VmaAllocationCreateInfo allocInfo{};
-    allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-    vmaCreateImage(
-        memoryAllocator,
-        &createInfo,
-        &allocInfo,
-        &vmaImage.image,
-        &vmaImage.allocation,
-        nullptr
-    );
-
-    VkImageSubresource subresource{};
-    subresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    VkSubresourceLayout layout{};
-    vkGetImageSubresourceLayout(vkDevice, vmaImage.image, &subresource, &layout);
-
-    int cpuPitch = textureWidth;
-    int gpuPitch = layout.rowPitch / sizeof(uint32_t);
-
-    uint32_t* cpuPixels = texturePixels.data();
-    uint32_t* gpuPixels = nullptr;
-    vmaMapMemory(memoryAllocator, vmaImage.allocation, reinterpret_cast<void**>(&gpuPixels));
-
-    for (int y = 0; y < textureHeight; y++) {
-        for (int x = 0; x < textureWidth; x++) {
-            gpuPixels[y * gpuPitch + x] = cpuPixels[y * cpuPitch + x];
-        }
-    }
-
-    vmaUnmapMemory(memoryAllocator, vmaImage.allocation);
-}
-
-void VlkContext::createDescriptorPool(const VkDevice& vkDevice) {
-    VkResult result;
-
-    VkDescriptorPoolSize poolSizes[] = {
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxDescriptorSets * maxDescriptorCount },
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxDescriptorSets * maxDescriptorCount },
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, maxDescriptorSets * maxDescriptorCount }
-    };
-    VkDescriptorPoolCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-    createInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-    createInfo.maxSets = maxDescriptorSets;
-    createInfo.poolSizeCount = sizeof(poolSizes) / sizeof(VkDescriptorPoolSize);
-    createInfo.pPoolSizes = poolSizes;
-
-    vkCreateDescriptorPool(vkDevice, &createInfo, nullptr, &descriptorPool);
-}
-
-void VlkContext::createDescriptorSetLayout(const VkDevice& vkDevice) {
-    VkResult result;
-
-    VkDescriptorSetLayoutBinding bindings[2]{};
-    bindings[0].binding = 0;
-    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    bindings[0].descriptorCount = maxDescriptorCount;
-    bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-    bindings[1].binding = 1;
-    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    bindings[1].descriptorCount = maxDescriptorCount;
-    bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    VkDescriptorBindingFlags bindingFlags[] = {
-        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
-        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
-    };
-
-    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo{};
-    bindingFlagsCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
-    bindingFlagsCreateInfo.pBindingFlags = bindingFlags;
-    bindingFlagsCreateInfo.bindingCount = sizeof(bindingFlags) / sizeof(VkDescriptorBindingFlags);
-
-    VkDescriptorSetLayoutCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    createInfo.pNext = &bindingFlagsCreateInfo;
-    createInfo.bindingCount = sizeof(bindings) / sizeof(VkDescriptorSetLayoutBinding);
-    createInfo.pBindings = bindings;
-
-    vkCreateDescriptorSetLayout(vkDevice, &createInfo, nullptr, &descriptorSetLayout);
-}
-
 void VlkContext::createPushConstantRange(const VkDevice& vkDevice) {
     pushConstantRange = VkPushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -1117,10 +988,12 @@ void VlkContext::createPushConstantRange(const VkDevice& vkDevice) {
 void VlkContext::createPipelineLayout(const VkDevice& vkDevice) {
     VkResult result;
 
+    //std::vector<VkDescriptorSetLayout> rtDescSetLayouts = { m_rtDescSetLayout, m_descSetLayout };
+
     VkPipelineLayoutCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    createInfo.setLayoutCount = 1;
-    createInfo.pSetLayouts = &descriptorSetLayout;
+    createInfo.setLayoutCount = 2;
+    createInfo.pSetLayouts = descriptorSetLayout.data();
     createInfo.pushConstantRangeCount = 1;
     createInfo.pPushConstantRanges = &pushConstantRange;
 
@@ -1132,10 +1005,10 @@ void VlkContext::createShaders(const VkDevice& vkDevice){
     std::vector<uint32_t> vertexCode, fragmentCode;
     vlkCompileSahder("res/shader/mesh.vert", shaderc_vertex_shader, vertexCode);
     vlkCompileSahder("res/shader/mesh.frag", shaderc_fragment_shader, fragmentCode);
-    vlkCreateShader(descriptorSetLayout, pushConstantRange, vertexCode, fragmentCode, shader);  
+    vlkCreateShader(descriptorSetLayout[0], pushConstantRange, vertexCode, fragmentCode, shader);
 }
 
-void createMVP(const VkDescriptorSet& vkDescriptorSet, const VkImageView& vkImageView, VmaBuffer& uniformMVP, UniformBufferObject*& uniformMappingMVP) {
+void createMVP(const VkDescriptorSet& vkDescriptorSet, VmaBuffer& uniformMVP, UniformBufferObject*& uniformMappingMVP) {
     VkBufferCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     createInfo.size = sizeof(UniformBufferObject);
@@ -1168,6 +1041,8 @@ void createMVP(const VkDescriptorSet& vkDescriptorSet, const VkImageView& vkImag
     descriptorWrite.pBufferInfo = &bufferInfo;
 
     vkUpdateDescriptorSets(vlkContext.vkDevice, 1, &descriptorWrite, 0, nullptr);
+}
 
-    //vlkBindImageViewToDescriptorSet(vkImageView, vkDescriptorSet, 1);
+void createMVP2() {
+
 }

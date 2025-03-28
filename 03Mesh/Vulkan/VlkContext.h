@@ -12,11 +12,7 @@ class VlkTexture;
 struct VlkContext {
 
     bool createVkDevice(VlkContext& vlkcontext, void* window); 
-    void createMesh();
-    void createTexture();
     void createShaders(const VkDevice& vkDevice);
-    void createDescriptorPool(const VkDevice& vkDevice);
-    void createDescriptorSetLayout(const VkDevice& vkDevice);
     void createPushConstantRange(const VkDevice& vkDevice);
     void createPipelineLayout(const VkDevice& vkDevice);
 
@@ -34,7 +30,9 @@ struct VlkContext {
     const int pushConstantRangeSize = 128;
 
     VkDescriptorPool descriptorPool;
-    VkDescriptorSetLayout descriptorSetLayout;
+
+    std::vector<VkDescriptorSetLayout> descriptorSetLayout;
+
     VkPushConstantRange pushConstantRange;
     VkPipelineLayout pipelineLayout;
     VkSampler sampler;
@@ -50,11 +48,10 @@ struct VlkContext {
     UniformBufferObject ubo;
     VlkSwapchain* swapchain;
     VlkSwapchain* newSwapchain;
-    std::vector<VkDescriptorSet> descriptorSets;
+
     VmaBuffer uniformMVP;
     UniformBufferObject* uniformMappingMVP;
-
-    bool textureReady = false;
+    VkDescriptorSet m_vkDescriptorSet;
 
     VkPolygonMode vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
     VkPresentModeKHR vkPresentModeKHR = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
@@ -108,7 +105,8 @@ extern "C" {
 
     void vlkCreateDescriptorPool(VkDescriptorPool& vkDescriptorPool);
     void vlkCreateDescriptorSetLayout(VkDescriptorSetLayout& vkDescriptorSetLayout);
-    void vlkAllocateDescriptorSets(VkDescriptorSet& vkDescriptorSet);
+    void vlkAllocateDescriptorSets(VkDescriptorSet& vkDescriptorSet, const VkDescriptorSetLayout& vkDescriptorSetLayout);
 
-    void createMVP(const VkDescriptorSet& vkDescriptorSet, const VkImageView& vkImageView, VmaBuffer& vmaBuffer, UniformBufferObject*& uniformBufferObject);
+    void createMVP(const VkDescriptorSet& vkDescriptorSet, VmaBuffer& vmaBuffer, UniformBufferObject*& uniformBufferObject);
+    void createMVP2();
 };

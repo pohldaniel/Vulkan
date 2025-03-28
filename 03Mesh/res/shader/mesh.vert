@@ -12,7 +12,7 @@ layout(push_constant) uniform PushConstants {
     int textureID;
 };
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(set = 0, binding = 0) uniform UniformBufferObject {
     mat4 model;
     mat4 view;
     mat4 proj;
