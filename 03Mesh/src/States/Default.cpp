@@ -45,10 +45,33 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 	for (const Material& material : materials) {
 		m_textures.push_back(VlkTexture());
 		m_textures.back().loadFromFile(material.textures[0], true);
-		m_textures.back().setDescriptorSet(vlkContext.descriptorSet);
+
 		
 	}
-	m_textures[0].bind(1u);
+
+	vlkAllocateDescriptorSets(m_textures[0].m_vkDescriptorSet);
+	createMVP(m_textures[0].m_vkDescriptorSet, m_textures[0].m_vkImageView, m_textures[0].uniformMVP, m_textures[0].uniformMappingMVP);
+	vlkBindImageViewToDescriptorSet(m_textures[0].m_vkImageView, m_textures[0].m_vkDescriptorSet, 1);
+
+	vlkAllocateDescriptorSets(m_textures[1].m_vkDescriptorSet);
+	createMVP(m_textures[1].m_vkDescriptorSet, m_textures[1].m_vkImageView, m_textures[1].uniformMVP, m_textures[1].uniformMappingMVP);
+	vlkBindImageViewToDescriptorSet(m_textures[1].m_vkImageView, m_textures[1].m_vkDescriptorSet, 1);
+
+	vlkAllocateDescriptorSets(m_textures[2].m_vkDescriptorSet);
+	createMVP(m_textures[2].m_vkDescriptorSet, m_textures[2].m_vkImageView, m_textures[2].uniformMVP, m_textures[2].uniformMappingMVP);
+	vlkBindImageViewToDescriptorSet(m_textures[2].m_vkImageView, m_textures[2].m_vkDescriptorSet, 1);
+
+	vlkAllocateDescriptorSets(m_textures[3].m_vkDescriptorSet);
+	createMVP(m_textures[3].m_vkDescriptorSet, m_textures[3].m_vkImageView, m_textures[3].uniformMVP, m_textures[3].uniformMappingMVP);
+	vlkBindImageViewToDescriptorSet(m_textures[3].m_vkImageView, m_textures[3].m_vkDescriptorSet, 1);
+
+
+
+	//m_textures[0].setDescriptorSet(vlkContext.descriptorSet);
+	//m_textures[0].bind(1u);
+	//m_textures[1].bind(1u);
+	//m_textures[2].bind(1u);
+	//m_textures[3].bind(1u);
 	
 	for (ObjMesh* mesh : m_model.getMeshes()) {
 		m_vertexBuffer.push_back(VlkBuffer());
@@ -58,7 +81,6 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 		m_indexBuffer.back().createBufferIndex(reinterpret_cast<const void*>(mesh->getIndexBuffer().data()), sizeof(unsigned int) * mesh->getIndexBuffer().size());
 		
 		m_meshes.push_back(new VlkMesh(m_vertexBuffer.back(), m_indexBuffer.back(), mesh->getIndexBuffer().size()));
-		m_meshes.back()->createMVP(vlkContext.memoryAllocator, vlkContext.descriptorSet);
 		m_meshes.back()->setShader(vlkContext.shader);
 	}
 }
@@ -135,10 +157,7 @@ void Default::update() {
 void Default::render() {
 	if (m_drawUi)
 		renderUi();
-	//vlkDraw(m_meshes);
-	for (std::list<VlkMesh*>::const_iterator it = m_meshes.begin(); it != m_meshes.end(); ++it) {
-		vlkDrawMesh(*it);
-	}
+	vlkDraw(m_meshes, m_textures);
 }
 
 void Default::OnMouseMotion(Event::MouseMoveEvent& event) {

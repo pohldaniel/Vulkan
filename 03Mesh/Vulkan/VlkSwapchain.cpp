@@ -1,6 +1,7 @@
 #include <iostream>
 #include "VlkSwapchain.h"
 #include "VlkContext.h"
+#include "VlkTexture.h"
 
 VlkSwapchain::VlkSwapchain(VlkContext* ctx, unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VkSwapchainKHR vkOldSwapchainKHR)
     : ctx(ctx)
@@ -37,11 +38,7 @@ VlkSwapchain::~VlkSwapchain(){
     vkDestroySwapchainKHR(ctx->vkDevice, swapchain, VK_NULL_HANDLE);
 }
 
-bool VlkSwapchain::drawMesh(const UniformBufferObject& ubo, VlkMesh* mesh) {
-    return draw(ubo, { mesh });
-}
-
-bool VlkSwapchain::draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes){
+bool VlkSwapchain::draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes, std::vector<VlkTexture>& textures){
     VkResult result;
  
     const VlkSwapchainElement* currentElement = elements.at(currentFrame);
@@ -76,7 +73,7 @@ bool VlkSwapchain::draw(const UniformBufferObject& ubo, const std::list<VlkMesh*
 
     vkResetFences(ctx->vkDevice, 1, &currentElement->fence);
 
-    element->draw(ubo, meshes);
+    element->draw(ubo, meshes, textures);
 
     VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 

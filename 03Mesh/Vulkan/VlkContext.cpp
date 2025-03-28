@@ -10,8 +10,11 @@
 #include "VlkContext.h"
 #include "VlkSwapchain.h"
 #include "VlkMesh.h"
+#include "VlkTexture.h"
 
 VlkContext vlkContext = {};
+int maxDescriptorSets = 10;
+int maxDescriptorCount = 65536;
 
 #define ArraySize(arr) sizeof((arr)) / sizeof((arr[0]))
 
@@ -85,17 +88,21 @@ void vlkInit(void* window) {
     vlkCreateCommandBuffer(vlkContext.vkCommandBuffer);
 
 
-    vlkContext.createDescriptorPool(vlkContext.vkDevice);
-    vlkContext.createDescriptorSetLayout(vlkContext.vkDevice);
+    vlkCreateDescriptorPool(vlkContext.descriptorPool);
+    vlkCreateDescriptorSetLayout(vlkContext.descriptorSetLayout);
+
+    vlkContext.descriptorSets.resize(4);
+
+    vlkAllocateDescriptorSets(vlkContext.descriptorSets[0]);
+    vlkAllocateDescriptorSets(vlkContext.descriptorSets[1]);
+    vlkAllocateDescriptorSets(vlkContext.descriptorSets[2]);
+    vlkAllocateDescriptorSets(vlkContext.descriptorSets[3]);
+
     vlkContext.createPushConstantRange(vlkContext.vkDevice);
     vlkContext.createPipelineLayout(vlkContext.vkDevice);
-    VkDescriptorSetAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    allocInfo.descriptorPool = vlkContext.descriptorPool;
-    allocInfo.descriptorSetCount = 1;
-    allocInfo.pSetLayouts = &vlkContext.descriptorSetLayout;
 
-    vkAllocateDescriptorSets(vlkContext.vkDevice, &allocInfo, &vlkContext.descriptorSet);
+
+   
 
     vlkCreateSampler(vlkContext.sampler);
     vlkCreateAllocator(vlkContext.memoryAllocator);
@@ -140,12 +147,8 @@ void vlkToggleWireframe() {
         vlkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
 }
 
-void vlkDraw(const std::list<VlkMesh*>& meshes) {
-    vlkContext.swapchain->draw(vlkContext.ubo, meshes);
-}
-
-void vlkDrawMesh(VlkMesh* mesh) {
-    vlkContext.swapchain->drawMesh(vlkContext.ubo, mesh);
+void vlkDraw(const std::list<VlkMesh*>& meshes, std::vector<VlkTexture>& textures) {
+    vlkContext.swapchain->draw(vlkContext.ubo, meshes, textures);
 }
 
 void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size) {
@@ -547,6 +550,71 @@ uint32_t vlkFindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties
         }
     }
     return 0;
+}
+
+void vlkCreateDescriptorPool(VkDescriptorPool& vkDescriptorPool) {
+    const VkDevice& vkDevice = vlkContext.vkDevice;
+
+    VkDescriptorPoolSize poolSizes[] = {
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxDescriptorSets * maxDescriptorCount },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxDescriptorSets * maxDescriptorCount },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, maxDescriptorSets * maxDescriptorCount }
+    };
+    VkDescriptorPoolCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+    createInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
+    createInfo.maxSets = maxDescriptorSets;
+    createInfo.poolSizeCount = sizeof(poolSizes) / sizeof(VkDescriptorPoolSize);
+    createInfo.pPoolSizes = poolSizes;
+
+    vkCreateDescriptorPool(vkDevice, &createInfo, nullptr, &vkDescriptorPool);
+}
+
+void vlkCreateDescriptorSetLayout(VkDescriptorSetLayout& vkDescriptorSetLayout) {
+    const VkDevice& vkDevice = vlkContext.vkDevice;
+
+    VkDescriptorSetLayoutBinding bindings[2]{};
+    bindings[0].binding = 0;
+    bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    bindings[0].descriptorCount = maxDescriptorCount;
+    bindings[0].stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
+    bindings[1].binding = 1;
+    bindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    bindings[1].descriptorCount = maxDescriptorCount;
+    bindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    VkDescriptorBindingFlags bindingFlags[] = {
+        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT,
+        VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT
+    };
+
+    VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsCreateInfo{};
+    bindingFlagsCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+    bindingFlagsCreateInfo.pBindingFlags = bindingFlags;
+    bindingFlagsCreateInfo.bindingCount = sizeof(bindingFlags) / sizeof(VkDescriptorBindingFlags);
+
+    VkDescriptorSetLayoutCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    createInfo.pNext = &bindingFlagsCreateInfo;
+    createInfo.bindingCount = sizeof(bindings) / sizeof(VkDescriptorSetLayoutBinding);
+    createInfo.pBindings = bindings;
+
+    vkCreateDescriptorSetLayout(vkDevice, &createInfo, nullptr, &vkDescriptorSetLayout);
+}
+
+void vlkAllocateDescriptorSets(VkDescriptorSet& vkDescriptorSet) {
+    const VkDevice& vkDevice = vlkContext.vkDevice;
+    const VkDescriptorSetLayout& vkDescriptorSetLayout = vlkContext.descriptorSetLayout;
+    const VkDescriptorPool& vkDescriptorPool = vlkContext.descriptorPool;
+    
+    VkDescriptorSetAllocateInfo allocInfo = {};
+    allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    allocInfo.descriptorPool = vkDescriptorPool;
+    allocInfo.descriptorSetCount = 1;
+    allocInfo.pSetLayouts = &vkDescriptorSetLayout;
+
+    vkAllocateDescriptorSets(vkDevice, &allocInfo, &vkDescriptorSet);
 }
 
 void FlipVertical(unsigned char* data, unsigned int padWidth, unsigned int height) {
@@ -1065,4 +1133,41 @@ void VlkContext::createShaders(const VkDevice& vkDevice){
     vlkCompileSahder("res/shader/mesh.vert", shaderc_vertex_shader, vertexCode);
     vlkCompileSahder("res/shader/mesh.frag", shaderc_fragment_shader, fragmentCode);
     vlkCreateShader(descriptorSetLayout, pushConstantRange, vertexCode, fragmentCode, shader);  
+}
+
+void createMVP(const VkDescriptorSet& vkDescriptorSet, const VkImageView& vkImageView, VmaBuffer& uniformMVP, UniformBufferObject*& uniformMappingMVP) {
+    VkBufferCreateInfo createInfo{};
+    createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    createInfo.size = sizeof(UniformBufferObject);
+    createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VmaAllocationCreateInfo allocInfo{};
+    allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+
+    vmaCreateBuffer(vlkContext.memoryAllocator, &createInfo, &allocInfo, &uniformMVP.buffer, &uniformMVP.allocation, nullptr);
+
+    vmaMapMemory(vlkContext.memoryAllocator, uniformMVP.allocation, reinterpret_cast<void**>(&uniformMappingMVP));
+
+    uniformMappingMVP->proj = glm::mat4(1.0f);
+    uniformMappingMVP->view = glm::mat4(1.0f);
+    uniformMappingMVP->model = glm::mat4(1.0f);
+
+    VkDescriptorBufferInfo bufferInfo{};
+    bufferInfo.buffer = uniformMVP.buffer;
+    bufferInfo.offset = 0;
+    bufferInfo.range = VK_WHOLE_SIZE;
+
+    VkWriteDescriptorSet descriptorWrite{};
+    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    descriptorWrite.dstSet = vkDescriptorSet;
+    descriptorWrite.dstBinding = 0;
+    descriptorWrite.dstArrayElement = 0;
+    descriptorWrite.descriptorCount = 1;
+    descriptorWrite.pBufferInfo = &bufferInfo;
+
+    vkUpdateDescriptorSets(vlkContext.vkDevice, 1, &descriptorWrite, 0, nullptr);
+
+    //vlkBindImageViewToDescriptorSet(vkImageView, vkDescriptorSet, 1);
 }

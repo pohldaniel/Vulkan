@@ -4,7 +4,9 @@
 #include <Vulkan/vulkan.h>
 #include "VlkSwapchainElement.h"
 
+
 struct VlkContext;
+class VlkTexture;
 
 class VlkSwapchain{
 
@@ -17,8 +19,7 @@ public:
     VlkSwapchain& operator=(const VlkSwapchain& rhs) = delete;
     VlkSwapchain& operator=(VlkSwapchain&& rhs) = delete;
 
-    bool draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes);
-    bool drawMesh(const UniformBufferObject& ubo, VlkMesh* mesh);
+    bool draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes, std::vector<VlkTexture>& textures);
 
     VlkContext* ctx;
 

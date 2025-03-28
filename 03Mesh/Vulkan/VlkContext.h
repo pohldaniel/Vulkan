@@ -7,6 +7,7 @@
 
 class VlkSwapchain;
 class VlkMesh;
+class VlkTexture;
 
 struct VlkContext {
 
@@ -49,7 +50,10 @@ struct VlkContext {
     UniformBufferObject ubo;
     VlkSwapchain* swapchain;
     VlkSwapchain* newSwapchain;
-    VkDescriptorSet descriptorSet;
+    std::vector<VkDescriptorSet> descriptorSets;
+    VmaBuffer uniformMVP;
+    UniformBufferObject* uniformMappingMVP;
+
     bool textureReady = false;
 
     VkPolygonMode vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
@@ -57,6 +61,8 @@ struct VlkContext {
 };
 
 extern VlkContext vlkContext;
+extern int maxDescriptorSets;
+extern int maxDescriptorCount;
 
 extern "C" {
 
@@ -64,8 +70,7 @@ extern "C" {
     void vlkResize();
     void vlkToggleVerticalSync();
     void vlkToggleWireframe();
-    void vlkDraw(const std::list<VlkMesh*>& meshes);
-    void vlkDrawMesh(VlkMesh* mesh);
+    void vlkDraw(const std::list<VlkMesh*>& meshes, std::vector<VlkTexture>& textures);
 
     void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size);
     void vlkCreateBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, uint32_t size, VkBufferUsageFlags vkBufferUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags);
@@ -99,5 +104,11 @@ extern "C" {
 
     void vlkReadImageFile(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, const char* fileName, int& width, int& height, const bool flipVertical = false);
     void vlkBindImageViewToDescriptorSet(const VkImageView& vkImageView, const VkDescriptorSet& vkDescriptorSet, uint32_t dstBinding);
-   
+  
+
+    void vlkCreateDescriptorPool(VkDescriptorPool& vkDescriptorPool);
+    void vlkCreateDescriptorSetLayout(VkDescriptorSetLayout& vkDescriptorSetLayout);
+    void vlkAllocateDescriptorSets(VkDescriptorSet& vkDescriptorSet);
+
+    void createMVP(const VkDescriptorSet& vkDescriptorSet, const VkImageView& vkImageView, VmaBuffer& vmaBuffer, UniformBufferObject*& uniformBufferObject);
 };

@@ -1,10 +1,11 @@
 #pragma once
 #include <vector>
-#include "entity.h"
-#include "VlkMesh.h"
+#include "Data.h"
 
-class VlkSwapchain;
 struct VlkContext;
+class VlkSwapchain;
+class VlkTexture;
+class VlkMesh;
 
 class VlkSwapchainElement
 {
@@ -17,7 +18,7 @@ public:
     VlkSwapchainElement& operator=(const VlkSwapchainElement& rhs) = delete;
     VlkSwapchainElement& operator=(VlkSwapchainElement&& rhs) = delete;
 
-    void draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes);
+    void draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes, std::vector<VlkTexture>& textures);
 
     VlkContext* ctx;
     VlkSwapchain* swapchain;
@@ -45,5 +46,12 @@ public:
     VkRect2D scissor;
 
 
-    std::vector<Entity*> entities;
+
+
+   
+
+    int descriptorIndex;
+
+    void draw(const VkCommandBuffer& vkCommandbuffer, const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount, VlkTexture* texture);
+
 };
