@@ -14,7 +14,8 @@ struct VlkContext {
     bool createVkDevice(VlkContext& vlkcontext, void* window); 
     void createShaders(const VkDevice& vkDevice);
     void createPushConstantRange(const VkDevice& vkDevice);
-    void createPipelineLayout(const VkDevice& vkDevice);
+    void createDescriptorSetLayout();
+    void createUniformBuffer(const VkDescriptorSet& vkDescriptorSet, VmaBuffer& vmaBuffer, UniformBufferObject*& uniformBufferObject);
 
     VkExtent2D screenSize;
     VkInstance vkInstance;
@@ -92,7 +93,7 @@ extern "C" {
 
     void vlkReadFile(const char* filename, std::vector<char>& data);
     void vlkCompileSahder(const char* path, shaderc_shader_kind kind, std::vector<uint32_t>& shaderCode);
-    std::vector<VkShaderEXT>& vlkCreateShader(const VkDescriptorSetLayout& vkDescriptorSetLayout, const VkPushConstantRange& vkPushConstantRange, const std::vector<uint32_t>& vertexCode, const std::vector<uint32_t>& fragmentCode, std::vector<VkShaderEXT>& shader);
+    std::vector<VkShaderEXT>& vlkCreateShader(const std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts, const VkPushConstantRange& vkPushConstantRange, const std::vector<uint32_t>& vertexCode, const std::vector<uint32_t>& fragmentCode, std::vector<VkShaderEXT>& shader);
 
     void vlkCreateSampler(VkSampler& vkSampler);
     void vlkCreateAllocator(VmaAllocator& vmaAllocator);
@@ -104,9 +105,11 @@ extern "C" {
   
 
     void vlkCreateDescriptorPool(VkDescriptorPool& vkDescriptorPool);
-    void vlkCreateDescriptorSetLayout(VkDescriptorSetLayout& vkDescriptorSetLayout);
+
     void vlkAllocateDescriptorSets(VkDescriptorSet& vkDescriptorSet, const VkDescriptorSetLayout& vkDescriptorSetLayout);
 
-    void createMVP(const VkDescriptorSet& vkDescriptorSet, VmaBuffer& vmaBuffer, UniformBufferObject*& uniformBufferObject);
-    void createMVP2();
+   
+
+
+    void vlkCreatePipelineLayout(const std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts, const std::vector<VkPushConstantRange> vkPushConstantRanges, VkPipelineLayout& vkPipelineLayout);
 };

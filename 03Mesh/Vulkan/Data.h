@@ -2,14 +2,6 @@
 #include <glm/glm.hpp>
 #include <vma/vk_mem_alloc.h>
 
-struct Vertex {
-    float x;
-    float y;
-    float z;
-    float u;
-    float v;
-};
-
 struct VmaBuffer {
     VkBuffer buffer;
     VmaAllocation allocation;

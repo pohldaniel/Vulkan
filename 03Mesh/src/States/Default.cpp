@@ -44,37 +44,21 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 
 	for (const Material& material : materials) {
 		m_textures.push_back(VlkTexture());
-		m_textures.back().loadFromFile(material.textures[0], true);
-
-		
+		m_textures.back().loadFromFile(material.textures[0], true);		
 	}
 
-	vlkAllocateDescriptorSets(vlkContext.m_vkDescriptorSet, vlkContext.descriptorSetLayout[0]);
-	createMVP(vlkContext.m_vkDescriptorSet, vlkContext.uniformMVP, vlkContext.uniformMappingMVP);
-
 	vlkAllocateDescriptorSets(m_textures[0].m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
-	vlkBindImageViewToDescriptorSet(m_textures[0].m_vkImageView, m_textures[0].m_vkDescriptorSet, 0);
+	vlkBindImageViewToDescriptorSet(m_textures[0].m_vkImageView, m_textures[0].m_vkDescriptorSet, 0u);
 
 	vlkAllocateDescriptorSets(m_textures[1].m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
-	//createMVP(m_textures[1].m_vkDescriptorSet, m_textures[1].uniformMVP, m_textures[1].uniformMappingMVP);
-	vlkBindImageViewToDescriptorSet(m_textures[1].m_vkImageView, m_textures[1].m_vkDescriptorSet, 0);
+	vlkBindImageViewToDescriptorSet(m_textures[1].m_vkImageView, m_textures[1].m_vkDescriptorSet, 0u);
 
 	vlkAllocateDescriptorSets(m_textures[2].m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
-	//createMVP(m_textures[2].m_vkDescriptorSet, m_textures[2].uniformMVP, m_textures[2].uniformMappingMVP);
-	vlkBindImageViewToDescriptorSet(m_textures[2].m_vkImageView, m_textures[2].m_vkDescriptorSet, 0);
+	vlkBindImageViewToDescriptorSet(m_textures[2].m_vkImageView, m_textures[2].m_vkDescriptorSet, 0u);
 
 	vlkAllocateDescriptorSets(m_textures[3].m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
-	//createMVP(m_textures[3].m_vkDescriptorSet, m_textures[3].uniformMVP, m_textures[3].uniformMappingMVP);
-	vlkBindImageViewToDescriptorSet(m_textures[3].m_vkImageView, m_textures[3].m_vkDescriptorSet, 0);
+	vlkBindImageViewToDescriptorSet(m_textures[3].m_vkImageView, m_textures[3].m_vkDescriptorSet, 0u);
 
-
-
-	//m_textures[0].setDescriptorSet(vlkContext.descriptorSet);
-	//m_textures[0].bind(1u);
-	//m_textures[1].bind(1u);
-	//m_textures[2].bind(1u);
-	//m_textures[3].bind(1u);
-	
 	for (ObjMesh* mesh : m_model.getMeshes()) {
 		m_vertexBuffer.push_back(VlkBuffer());
 		m_vertexBuffer.back().createBufferVertex(reinterpret_cast<const void*>(mesh->getVertexBuffer().data()), sizeof(float) * mesh->getVertexBuffer().size());

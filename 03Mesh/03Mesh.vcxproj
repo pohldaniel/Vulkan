@@ -37,7 +37,6 @@
     <ClInclude Include="src\States\Default.h" />
     <ClInclude Include="src\States\StateMachine.h" />
     <ClInclude Include="Vulkan\Data.h" />
-    <ClInclude Include="Vulkan\entity.h" />
     <ClInclude Include="Vulkan\VlkBuffer.h" />
     <ClInclude Include="Vulkan\VlkContext.h" />
     <ClInclude Include="Vulkan\VlkExtension.h" />
@@ -60,7 +59,6 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\States\Default.cpp" />
     <ClCompile Include="src\States\StateMachine.cpp" />
-    <ClCompile Include="Vulkan\entity.cpp" />
     <ClCompile Include="Vulkan\VlkBuffer.cpp" />
     <ClCompile Include="Vulkan\VlkContext.cpp" />
     <ClCompile Include="Vulkan\VlkExtension.cpp" />

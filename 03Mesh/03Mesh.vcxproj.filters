@@ -69,9 +69,6 @@
     <ClInclude Include="src\States\Default.h">
       <Filter>Source Files\States</Filter>
     </ClInclude>
-    <ClInclude Include="Vulkan\entity.h">
-      <Filter>Vulkan</Filter>
-    </ClInclude>
     <ClInclude Include="engine\TrackBall.h">
       <Filter>engine</Filter>
     </ClInclude>
@@ -139,9 +136,6 @@
     </ClCompile>
     <ClCompile Include="src\States\Default.cpp">
       <Filter>Source Files\States</Filter>
-    </ClCompile>
-    <ClCompile Include="Vulkan\entity.cpp">
-      <Filter>Vulkan</Filter>
     </ClCompile>
     <ClCompile Include="engine\ObjModel.cpp">
       <Filter>engine</Filter>
