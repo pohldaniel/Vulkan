@@ -28,24 +28,12 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 
 	m_model.loadModel("res/models/dragon/dragon.obj", glm::vec3(1.0f, 0.0f, 0.0f), -90.0f, glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, false);
 
-	uint32_t size = sizeof(float) * m_model.getMesh(0)->getVertexBuffer().size();
-	vlkCreateBuffer(m_srcVertexBuffer, m_srcVertexBufferMemory, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	vlkMapBuffer(m_srcVertexBufferMemory, reinterpret_cast<const void*>(m_model.getMesh(0)->getVertexBuffer().data()), size);
-	vlkCreateBuffer(m_dstVertexBuffer, m_dstVertexBufferMemory, size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	vlkCopyBuffer(m_srcVertexBuffer, m_dstVertexBuffer, size);
-
-	size = sizeof(unsigned int) * m_model.getMesh(0)->getIndexBuffer().size();
-	vlkCreateBuffer(m_srcIndexBuffer, m_srcIndexBufferMemory, size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	vlkMapBuffer(m_srcIndexBufferMemory, reinterpret_cast<const void*>(m_model.getMesh(0)->getIndexBuffer().data()), size);
-	vlkCreateBuffer(m_dstIndexBuffer, m_dstIndexBufferMemory, size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-	vlkCopyBuffer(m_srcIndexBuffer, m_dstIndexBuffer, size);
-
 	for (ObjMesh* mesh : m_model.getMeshes()) {
 		m_vertexBuffer.push_back(VlkBuffer());
-		m_vertexBuffer.back().createBufferVertex(reinterpret_cast<const void*>(mesh->getVertexBuffer().data()), sizeof(float) * mesh->getVertexBuffer().size());
+		m_vertexBuffer.back().createBuffer(reinterpret_cast<const void*>(mesh->getVertexBuffer().data()), sizeof(float) * mesh->getVertexBuffer().size(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
 			
 		m_indexBuffer.push_back(VlkBuffer());
-		m_indexBuffer.back().createBufferIndex(reinterpret_cast<const void*>(mesh->getIndexBuffer().data()), sizeof(unsigned int) * mesh->getIndexBuffer().size());
+		m_indexBuffer.back().createBuffer(reinterpret_cast<const void*>(mesh->getIndexBuffer().data()), sizeof(unsigned int) * mesh->getIndexBuffer().size(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 		
 		m_textures.push_back(VlkTexture());
 		m_textures.back().loadFromFile(mesh->getMaterial().textures[0], true);
@@ -119,11 +107,11 @@ void Default::update() {
 		}
 	}
 
-	ubo.proj = m_camera.getPerspectiveMatrix();
-	ubo.view = m_camera.getViewMatrix();
-	ubo.model = glm::mat4(1.0f);
+	m_ubo.proj = m_camera.getPerspectiveMatrix();
+	m_ubo.view = m_camera.getViewMatrix();
+	m_ubo.model = glm::mat4(1.0f);
 
-	memcpy(vlkContext.uniformMappingMVP, &ubo, sizeof(ubo));
+	memcpy(vlkContext.uniformMappingMVP, &m_ubo, sizeof(m_ubo));
 }
 
 void Default::render() {

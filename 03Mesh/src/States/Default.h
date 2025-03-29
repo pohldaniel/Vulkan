@@ -40,35 +40,11 @@ private:
 	bool m_drawWirframe = false;
 
 	Camera m_camera;
-	UniformBufferObject m_uniformBufferObject;
+	UniformBufferObject m_ubo;
 	ObjModel m_model;
-
-	VkBuffer m_srcVertexBuffer;
-	VkDeviceMemory m_srcVertexBufferMemory;
-
-	VkBuffer m_srcIndexBuffer;
-	VkDeviceMemory m_srcIndexBufferMemory;
-
-	VkBuffer m_dstVertexBuffer;
-	VkDeviceMemory m_dstVertexBufferMemory;
-
-	VkBuffer m_dstIndexBuffer;
-	VkDeviceMemory m_dstIndexBufferMemory;
-
-	VkImage textureImage;
-	VkDeviceMemory textureImageMemory;
-	VkImageView textureView;
 
 	std::list<VlkTexture> m_textures;
 	std::list<VlkBuffer> m_vertexBuffer;
 	std::list<VlkBuffer> m_indexBuffer;
 	std::list<VlkMesh> m_meshes;
-
-	VlkMesh* m_mesh;
-
-	VlkBuffer _vertex;
-	VlkBuffer _index;
-
-	UniformBufferObject ubo;
-
 };

@@ -10,8 +10,8 @@ public:
 	VlkBuffer(VlkBuffer&& rhs) noexcept;
 
 
-	void createBufferVertex(const void* data, uint32_t size);
-	void createBufferIndex(const void* data, uint32_t size);
+	void createBuffer(const void* data, uint32_t size, VkBufferUsageFlagBits vkBufferUsageFlagBits);
+
 
 	VkBuffer m_vkBuffer;
 	VkDeviceMemory m_vkDeviceMemory;

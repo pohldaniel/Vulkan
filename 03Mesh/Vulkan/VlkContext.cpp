@@ -105,8 +105,7 @@ void vlkInit(void* window) {
 }
 
 void vlkResize() {
-    const VkDevice& vkDevice = vlkContext.vkDevice;
-    vkDeviceWaitIdle(vkDevice);
+    vlkWaitIdle();
 
     vlkContext.newSwapchain = new VlkSwapchain(&vlkContext, Application::Width, Application::Height, vlkContext.vkPresentModeKHR, vlkContext.swapchain->swapchain);
     delete vlkContext.swapchain;
@@ -119,12 +118,16 @@ void vlkToggleVerticalSync() {
     else
         vlkContext.vkPresentModeKHR = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
 
-    const VkDevice& vkDevice = vlkContext.vkDevice;
-    vkDeviceWaitIdle(vkDevice);
+    vlkWaitIdle();
 
     vlkContext.newSwapchain = new VlkSwapchain(&vlkContext, Application::Width, Application::Height, vlkContext.vkPresentModeKHR, vlkContext.swapchain->swapchain);
     delete vlkContext.swapchain;
     vlkContext.swapchain = vlkContext.newSwapchain;
+}
+
+void vlkWaitIdle() {
+    const VkDevice& vkDevice = vlkContext.vkDevice;
+    vkDeviceWaitIdle(vkDevice);
 }
 
 void vlkToggleWireframe() {
@@ -132,6 +135,13 @@ void vlkToggleWireframe() {
         vlkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_LINE;
     else
         vlkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
+}
+
+void vlkShutDown() {
+    const VkInstance& vkInstance = vlkContext.vkInstance;
+    const VkSurfaceKHR& vkSurfaceKHR = vlkContext.vkSurfaceKHR;
+    delete vlkContext.swapchain;
+    vkDestroySurfaceKHR(vkInstance, vkSurfaceKHR, VK_NULL_HANDLE);
 }
 
 void vlkDraw(const std::list<VlkMesh>& meshes) {

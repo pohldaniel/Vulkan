@@ -52,7 +52,10 @@ Application::Application(const float& dt, const float& fdt) : m_dt(dt), m_fdt(fd
 }
 Application::~Application() {	
 	delete Machine;
-
+	vlkWaitIdle();
+	vlkShutDown();
+	ImGui_ImplVulkan_Shutdown();
+	ImGui_ImplWin32_Shutdown();
 	ImGui::DestroyContext();
 
 	HDC hdc = GetDC(Window);
@@ -256,6 +259,8 @@ void Application::initImGUI() {
 
 	ImGui_ImplVulkan_Init(&init_info);
 	ImGui_ImplVulkan_CreateFontsTexture();
+
+	
 }
 
 const HWND& Application::GetWindow() {

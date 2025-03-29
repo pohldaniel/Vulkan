@@ -63,7 +63,9 @@ extern "C" {
     bool vlkCreateDevice(VlkContext& vlkcontext, void* window);
     void vlkResize();
     void vlkToggleVerticalSync();
+    void vlkWaitIdle();
     void vlkToggleWireframe();
+    void vlkShutDown();
     void vlkDraw(const std::list<VlkMesh>& meshes);
 
     void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size);
