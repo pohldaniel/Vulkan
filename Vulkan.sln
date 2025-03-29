@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35312.102
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libimgui", "libimgui\libimgui.vcxproj", "{3160706F-23B1-4D5F-83DE-7F33577325FB}"
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libsoil2", "libsoil2\libsoil2.vcxproj", "{5CA45C92-0666-4C96-B9D8-5962E67DE055}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libassimp", "libassimp\libassimp.vcxproj", "{5B6070E9-F688-4BA9-A26B-7B2997D67DFA}"
@@ -12,6 +10,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libzlib", "libzlib\libzlib.vcxproj", "{3EDA72B4-0BF1-4D04-ADE4-B6ED77CDB985}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "01DynamicRendering", "01DynamicRendering\01DynamicRendering.vcxproj", "{52A65374-58E0-403A-9865-20331D6FD530}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "libimgui", "libimgui\libimgui.vcxproj", "{3160706F-23B1-4D5F-83DE-7F33577325FB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,14 +21,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Debug|x64.ActiveCfg = Debug|x64
-		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Debug|x64.Build.0 = Debug|x64
-		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Debug|x86.ActiveCfg = Debug|Win32
-		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Debug|x86.Build.0 = Debug|Win32
-		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Release|x64.ActiveCfg = Release|x64
-		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Release|x64.Build.0 = Release|x64
-		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Release|x86.ActiveCfg = Release|Win32
-		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Release|x86.Build.0 = Release|Win32
 		{5CA45C92-0666-4C96-B9D8-5962E67DE055}.Debug|x64.ActiveCfg = Debug|x64
 		{5CA45C92-0666-4C96-B9D8-5962E67DE055}.Debug|x64.Build.0 = Debug|x64
 		{5CA45C92-0666-4C96-B9D8-5962E67DE055}.Debug|x86.ActiveCfg = Debug|Win32
@@ -61,6 +53,14 @@ Global
 		{52A65374-58E0-403A-9865-20331D6FD530}.Release|x64.Build.0 = Release|x64
 		{52A65374-58E0-403A-9865-20331D6FD530}.Release|x86.ActiveCfg = Release|Win32
 		{52A65374-58E0-403A-9865-20331D6FD530}.Release|x86.Build.0 = Release|Win32
+		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Debug|x64.ActiveCfg = Debug|x64
+		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Debug|x64.Build.0 = Debug|x64
+		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Debug|x86.ActiveCfg = Debug|Win32
+		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Debug|x86.Build.0 = Debug|Win32
+		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Release|x64.ActiveCfg = Release|x64
+		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Release|x64.Build.0 = Release|x64
+		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Release|x86.ActiveCfg = Release|Win32
+		{3160706F-23B1-4D5F-83DE-7F33577325FB}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
