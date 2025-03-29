@@ -106,7 +106,7 @@ void Camera::orthographic(float left, float right, float bottom, float top, floa
 void Camera::lookAt(const glm::vec3& eye, const glm::vec3& target, const glm::vec3& up){
 	m_eye = eye;
 	m_target = target;
-	m_offsetDistance = (m_target - m_eye).length();
+	m_offsetDistance = glm::length((m_target - m_eye));
 
 	m_zAxis = glm::normalize(m_eye - target);
 	m_xAxis = glm::normalize(glm::cross(up, m_zAxis));

@@ -24,7 +24,7 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 	m_camera.orthographic(0.0f, static_cast<float>(Application::Width), 0.0f, static_cast<float>(Application::Height), -1.0f, 1.0f);
 	m_camera.lookAt(glm::vec3(0.0f, 10.0f, 30.0f), glm::vec3(0.0f, 10.0f, 30.0f) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 	m_camera.setRotationSpeed(0.1f);
-	m_camera.setMovingSpeed(10.0f);
+	m_camera.setMovingSpeed(30.0f);
 
 	m_model.loadModel("res/models/dragon/dragon.obj", glm::vec3(1.0f, 0.0f, 0.0f), 0.0f, glm::vec3(0.0f, 0.0f, 0.0f), 1.0f, false, false, false, false, false, true, false);
 	m_modelAssimp.loadModel("res/models/viking_room/viking_room.obj", glm::vec3(1.0f, 0.0f, 0.0f), 0.0f, glm::vec3(0.0f, 0.0f, 0.0f), 10.0f, false, false, false, true, false);
@@ -56,6 +56,10 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 		m_vikingRoom.push_back(VlkMesh(m_vertexBuffer.back(), m_indexBuffer.back(), m_textures.back(), mesh->getIndexBuffer().size()));
 		m_vikingRoom.back().setShader(vlkContext.shader);
 	}
+	m_trackball.reshape(Application::Width, Application::Height);
+	m_trackball.setTrackballScale(0.5f);
+	//m_trackball.setCenterOfRotation(Vector3f(0.0f, 0.0f, -50.0f));
+	//m_trackball.setDollyPosition(Vector3f(0.0f, 0.0f, -50.0f));
 }
 
 Default::~Default() {
@@ -122,9 +126,12 @@ void Default::update() {
 		}
 	}
 
+	m_trackball.idle();
+	applyTransformation(m_trackball);
+
 	m_ubo.proj = m_camera.getPerspectiveMatrix();
 	m_ubo.view = m_camera.getViewMatrix();
-	m_ubo.model = glm::mat4(1.0f);
+	m_ubo.model = m_modelMtx;
 
 	memcpy(vlkContext.uniformMappingMVP, &m_ubo, sizeof(m_ubo));
 }
@@ -137,17 +144,24 @@ void Default::render() {
 }
 
 void Default::OnMouseMotion(Event::MouseMoveEvent& event) {
-
+	m_trackball.motion(event.x, event.y);
+	applyTransformation(m_trackball);
 }
 
 void Default::OnMouseButtonDown(Event::MouseButtonEvent& event) {
-	if (event.button == 2u) {
+	if (event.button == 1u) {
+		m_trackball.mouse(TrackBall::Button::ELeftButton, TrackBall::Modifier::ENoModifier, true, event.x, event.y);
+		applyTransformation(m_trackball);
+	}else if (event.button == 2u) {
 		Mouse::instance().attach(Application::GetWindow());
 	}
 }
 
 void Default::OnMouseButtonUp(Event::MouseButtonEvent& event) {
-	if (event.button == 2u || event.button == 1u) {
+	if (event.button == 1u) {
+		m_trackball.mouse(TrackBall::Button::ELeftButton, TrackBall::Modifier::ENoModifier, false, event.x, event.y);
+		applyTransformation(m_trackball);
+	}else if (event.button == 2u) {
 		Mouse::instance().detach();
 	}
 }
@@ -169,6 +183,10 @@ void Default::OnKeyDown(Event::KeyboardEvent& event) {
 
 void Default::OnKeyUp(Event::KeyboardEvent& event) {
 
+}
+
+void Default::applyTransformation(TrackBall& arc) {
+	m_modelMtx = arc.getTransform();	
 }
 
 void Default::resize(int deltaW, int deltaH) {

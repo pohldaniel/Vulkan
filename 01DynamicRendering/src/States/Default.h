@@ -6,7 +6,7 @@
 #include <engine/Camera.h>
 #include <engine/ObjModel.h>
 #include <engine/AssimpModel.h>
-
+#include <engine/TrackBall.h>
 #include <States/StateMachine.h>
 
 #include <Vulkan/Data.h>
@@ -40,7 +40,7 @@ public:
 private:
 
 	void renderUi();
-
+	void applyTransformation(TrackBall& arc);
 	bool m_initUi = true;
 	bool m_drawUi = true;
 	bool m_drawWirframe = false;
@@ -57,4 +57,6 @@ private:
 	std::list<VlkMesh> m_vikingRoom;
 
 	Model model = Model::DRAGON;
+	TrackBall m_trackball;
+	glm::mat4 m_modelMtx;
 };
