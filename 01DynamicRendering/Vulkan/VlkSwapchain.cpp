@@ -18,8 +18,8 @@ VlkSwapchain::VlkSwapchain(VlkContext* ctx, unsigned width, unsigned height, con
     images.resize(imageCount);
     vkGetSwapchainImagesKHR(ctx->vkDevice, swapchain, &imageCount, images.data());
 
-    depthImages.reserve(imageCount);
-    depthImagesMemory.reserve(imageCount);
+    depthImages.resize(imageCount);
+    depthImagesMemory.resize(imageCount);
 
     for (uint32_t i = 0; i < imageCount; i++) {
         vlkCreateImage(depthImages[i], depthImagesMemory[i], width, height, ctx->vkDepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
