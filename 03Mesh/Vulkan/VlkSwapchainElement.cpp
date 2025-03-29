@@ -6,7 +6,7 @@
 #include "VlkMesh.h"
 #include "VlkTexture.h"
 
-VlkSwapchainElement::VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image, VkImage depthImage) : ctx(swapchain->ctx), image(image), depthImage(depthImage), swapchain(swapchain), descriptorIndex(nextUniformIndex++) {
+VlkSwapchainElement::VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image, VkImage depthImage) : ctx(swapchain->ctx), image(image), depthImage(depthImage), swapchain(swapchain) {
 
     vlkCreateCommandBuffer(commandBuffer);
     vlkCreateSemaphore(startSemaphore);
@@ -65,7 +65,7 @@ VlkSwapchainElement::~VlkSwapchainElement(){
     vkDestroyImageView(ctx->vkDevice, depthImageView, nullptr);
 }
 
-void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const std::list<VlkMesh>& meshes, std::list<VlkTexture>& textures){
+void VlkSwapchainElement::draw(const std::list<VlkMesh>& meshes){
    
     
     vlkBeginCommandBuffer(commandBuffer);
@@ -94,17 +94,12 @@ void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const std::list<V
     vkCmdSetCullMode(commandBuffer, VK_CULL_MODE_NONE);
     vkCmdSetDepthBiasEnable(commandBuffer, false);
     vkCmdSetLineWidth(commandBuffer, 2.0f);
- 
-    // Uniform
-    vlkContext.uniformMappingMVP->model = ubo.model;
-    vlkContext.uniformMappingMVP->view = ubo.view;
-    vlkContext.uniformMappingMVP->proj = ubo.proj;
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 0, 1, &vlkContext.m_vkDescriptorSet, 0, NULL);
 
-    for (std::pair<std::list<VlkMesh>::const_iterator, std::list<VlkTexture>::iterator> i(meshes.begin(), textures.begin());
-        i.first != meshes.end(); ++i.first, ++i.second) {
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 1, 1, &(*i.first).vlkTexture.m_vkDescriptorSet, 0, NULL);
-        draw(commandBuffer, (*i.first).vlkBufferVertex.m_vkBuffer, (*i.first).vlkBufferIndex.m_vkBuffer, (*i.first).drawCount);
+   
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 0, 1, &vlkContext.vkDescriptorSetUbo, 0, NULL);
+
+    for (std::list<VlkMesh>::const_iterator mesh = meshes.begin(); mesh != meshes.end(); ++mesh) {
+        (*mesh).draw(commandBuffer);
     }
     
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
@@ -122,78 +117,4 @@ void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const std::list<V
                              VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
     vlkEndCommandBuffer(commandBuffer);
-    //vlkQueueSubmit(commandBuffer);
-}
-
-void VlkSwapchainElement::draw(const VkCommandBuffer& vkCommandbuffer, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount) {
-
-    // Mesh
-    VkDeviceSize meshOffset = 0;
-    vkCmdBindVertexBuffers(vkCommandbuffer, 0, 1, &vertex, &meshOffset);
-    vkCmdBindIndexBuffer(vkCommandbuffer, index, 0, VK_INDEX_TYPE_UINT32);
-
-    // Shader
-    VkShaderStageFlagBits stages[] = { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT };
-
-    vkCmdBindShadersEXT(vkCommandbuffer, sizeof(stages) / sizeof(VkShaderStageFlagBits), stages, ctx->shader.data());
-
-    // Vertex input settings
-    VkVertexInputBindingDescription2EXT vertexBinding{};
-    vertexBinding.sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_BINDING_DESCRIPTION_2_EXT;
-    vertexBinding.binding = 0;
-    vertexBinding.stride = sizeof(float) * 8;
-    vertexBinding.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-    vertexBinding.divisor = 1;
-
-    VkVertexInputAttributeDescription2EXT vertexAttributes[3]{};
-    vertexAttributes[0].sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT;
-    vertexAttributes[0].location = 0;
-    vertexAttributes[0].binding = 0;
-    vertexAttributes[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertexAttributes[0].offset = 0;
-
-    vertexAttributes[1].sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT;
-    vertexAttributes[1].location = 1;
-    vertexAttributes[1].binding = 0;
-    vertexAttributes[1].format = VK_FORMAT_R32G32_SFLOAT;
-    vertexAttributes[1].offset = 3 * sizeof(float);
-
-    vertexAttributes[2].sType = VK_STRUCTURE_TYPE_VERTEX_INPUT_ATTRIBUTE_DESCRIPTION_2_EXT;
-    vertexAttributes[2].location = 2;
-    vertexAttributes[2].binding = 0;
-    vertexAttributes[2].format = VK_FORMAT_R32G32B32_SFLOAT;
-    vertexAttributes[2].offset = 5 * sizeof(float);
-
-    vkCmdSetVertexInputEXT(vkCommandbuffer, 1, &vertexBinding, sizeof(vertexAttributes) / sizeof(VkVertexInputAttributeDescription2EXT), vertexAttributes);
-
-    // Input assembly settings
-    vkCmdSetPrimitiveTopology(vkCommandbuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
-    vkCmdSetPrimitiveRestartEnable(vkCommandbuffer, false);
-
-    // Multisample settings
-    vkCmdSetRasterizationSamplesEXT(vkCommandbuffer, VK_SAMPLE_COUNT_1_BIT);
-    VkSampleMask sampleMask = 1;
-    vkCmdSetSampleMaskEXT(vkCommandbuffer, VK_SAMPLE_COUNT_1_BIT, &sampleMask);
-    vkCmdSetAlphaToCoverageEnableEXT(vkCommandbuffer, false);
-
-    // Color blend settings
-    VkBool32 colorBlend = false;
-    vkCmdSetColorBlendEnableEXT(vkCommandbuffer, 0, 1, &colorBlend);
-    VkColorBlendEquationEXT colorBlendEquation{};
-    colorBlendEquation.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
-    colorBlendEquation.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    colorBlendEquation.colorBlendOp = VK_BLEND_OP_ADD;
-    colorBlendEquation.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
-    colorBlendEquation.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-    colorBlendEquation.alphaBlendOp = VK_BLEND_OP_ADD;
-    vkCmdSetColorBlendEquationEXT(vkCommandbuffer, 0, 1, &colorBlendEquation);
-    VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-    vkCmdSetColorWriteMaskEXT(vkCommandbuffer, 0, 1, &colorWriteMask);
-
-    
-
-    // Push constants
-    int ids[] = { descriptorIndex,0 };
-    vkCmdPushConstants(vkCommandbuffer, ctx->pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ids), ids);
-    vkCmdDrawIndexed(vkCommandbuffer, drawCount, 1, 0, 0, 0);
 }

@@ -19,7 +19,7 @@ public:
     VlkSwapchain& operator=(const VlkSwapchain& rhs) = delete;
     VlkSwapchain& operator=(VlkSwapchain&& rhs) = delete;
 
-    bool draw(const UniformBufferObject& ubo, const std::list<VlkMesh>& meshes, std::list<VlkTexture>& textures);
+    bool draw(const std::list<VlkMesh>& meshes);
 
     VlkContext* ctx;
 

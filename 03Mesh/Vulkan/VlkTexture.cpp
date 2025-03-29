@@ -5,7 +5,14 @@
 #include "VlkTexture.h"
 
 
-VlkTexture::VlkTexture() : m_vkImage(VK_NULL_HANDLE), m_vkDeviceMemory(VK_NULL_HANDLE), m_vkImageView(VK_NULL_HANDLE), m_vkDescriptorSet(VK_NULL_HANDLE) {
+VlkTexture::VlkTexture() : 
+    m_vkImage(VK_NULL_HANDLE), 
+    m_vkDeviceMemory(VK_NULL_HANDLE), 
+    m_vkImageView(VK_NULL_HANDLE), 
+    m_vkDescriptorSet(VK_NULL_HANDLE),
+    m_width(0u),
+    m_height(0u),
+    m_channels(0u){
 
 }
 
@@ -71,16 +78,10 @@ void VlkTexture::loadFromFile(std::string fileName, const bool flipVertical) {
     vkFreeMemory(vlkContext.vkDevice, stagingBufferMemory, nullptr);
 
     vlkCreateImageView(m_vkImageView, m_vkImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, { VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY });
-    allocateDescriptorSet(vlkContext.descriptorSetLayout[1]);
-    bind(0u);
-}
-
-void VlkTexture::allocateDescriptorSet(const VkDescriptorSetLayout& vkDescriptorSetLayout) {
-    vlkAllocateDescriptorSets(m_vkDescriptorSet, vkDescriptorSetLayout);
-}
-
-void VlkTexture::bind(uint32_t dstBinding) {
-    vlkBindImageViewToDescriptorSet(m_vkImageView, m_vkDescriptorSet, dstBinding);
+    
+    // Allocate Sampler for every texture
+    vlkAllocateDescriptorSet(m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
+    vlkBindImageViewToDescriptorSet(m_vkImageView, m_vkDescriptorSet, 00);
 }
 
 void VlkTexture::FlipVertical(unsigned char* data, unsigned int padWidth, unsigned int height) {

@@ -3,7 +3,7 @@
 #include <list>
 #include <vulkan/vulkan.h>
 #include <shaderc/shaderc.h>
-#include "Data.h"
+#include <vma/vk_mem_alloc.h>
 
 class VlkSwapchain;
 class VlkMesh;
@@ -11,11 +11,9 @@ class VlkTexture;
 
 struct VlkContext {
 
-    bool createVkDevice(VlkContext& vlkcontext, void* window); 
+
     void createShaders(const VkDevice& vkDevice);
-    void createPushConstantRange(const VkDevice& vkDevice);
     void createDescriptorSetLayout();
-    void createUniformBuffer(const VkDescriptorSet& vkDescriptorSet, VmaBuffer& vmaBuffer, UniformBufferObject*& uniformBufferObject);
 
     VkExtent2D screenSize;
     VkInstance vkInstance;
@@ -37,25 +35,22 @@ struct VlkContext {
     VkPushConstantRange pushConstantRange;
     VkPipelineLayout pipelineLayout;
     VkSampler sampler;
-    VkImageView textureView;
     std::vector<VkShaderEXT> shader;
-    VmaImage vmaImage;
-    VmaBuffer vmaBuffer;
-    VmaAllocator memoryAllocator;
     VkQueue vkQueue;
     VkCommandPool vkCommandPool;
     VkCommandBuffer vkCommandBuffer;
     VkFormat vkDepthFormat;
-    UniformBufferObject ubo;
+
     VlkSwapchain* swapchain;
     VlkSwapchain* newSwapchain;
 
-    VmaBuffer uniformMVP;
-    UniformBufferObject* uniformMappingMVP;
-    VkDescriptorSet m_vkDescriptorSet;
-
+    VkDescriptorSet vkDescriptorSetUbo;
     VkPolygonMode vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
     VkPresentModeKHR vkPresentModeKHR = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
+
+    VkBuffer vkBufferUniform;
+    VkDeviceMemory vkDeviceMemoryUniform;
+    void* uniformMappingMVP;
 };
 
 extern VlkContext vlkContext;
@@ -65,10 +60,11 @@ extern int maxDescriptorCount;
 extern "C" {
 
     void vlkInit(void* window);
+    bool vlkCreateDevice(VlkContext& vlkcontext, void* window);
     void vlkResize();
     void vlkToggleVerticalSync();
     void vlkToggleWireframe();
-    void vlkDraw(const std::list<VlkMesh>& meshes, std::list<VlkTexture>& textures);
+    void vlkDraw(const std::list<VlkMesh>& meshes);
 
     void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size);
     void vlkCreateBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, uint32_t size, VkBufferUsageFlags vkBufferUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags);
@@ -100,16 +96,12 @@ extern "C" {
 
     uint32_t vlkFindMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
 
-    void vlkReadImageFile(VkImage& vkImage, VkDeviceMemory& vkDeviceMemory, const char* fileName, int& width, int& height, const bool flipVertical = false);
     void vlkBindImageViewToDescriptorSet(const VkImageView& vkImageView, const VkDescriptorSet& vkDescriptorSet, uint32_t dstBinding);
   
-
     void vlkCreateDescriptorPool(VkDescriptorPool& vkDescriptorPool);
-
-    void vlkAllocateDescriptorSets(VkDescriptorSet& vkDescriptorSet, const VkDescriptorSetLayout& vkDescriptorSetLayout);
-
-   
-
+    void vlkAllocateDescriptorSet(VkDescriptorSet& vkDescriptorSet, const VkDescriptorSetLayout& vkDescriptorSetLayout);
 
     void vlkCreatePipelineLayout(const std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts, const std::vector<VkPushConstantRange> vkPushConstantRanges, VkPipelineLayout& vkPipelineLayout);
+    void vlkCreateUniformBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, void*& mapping, uint32_t size);
+    void vlkBindBufferToDescriptorSet(const VkBuffer& vkBuffer, const VkDescriptorSet& vkDescriptorSet, VkDescriptorType vkDescriptorType, uint32_t dstBinding);
 };

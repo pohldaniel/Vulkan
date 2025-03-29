@@ -119,15 +119,17 @@ void Default::update() {
 		}
 	}
 
-	vlkContext.ubo.proj = m_camera.getPerspectiveMatrix();
-	vlkContext.ubo.view = m_camera.getViewMatrix();
-	vlkContext.ubo.model = glm::mat4(1.0f);
+	ubo.proj = m_camera.getPerspectiveMatrix();
+	ubo.view = m_camera.getViewMatrix();
+	ubo.model = glm::mat4(1.0f);
+
+	memcpy(vlkContext.uniformMappingMVP, &ubo, sizeof(ubo));
 }
 
 void Default::render() {
 	if (m_drawUi)
 		renderUi();
-	vlkDraw(m_meshes, m_textures);
+	vlkDraw(m_meshes);
 }
 
 void Default::OnMouseMotion(Event::MouseMoveEvent& event) {

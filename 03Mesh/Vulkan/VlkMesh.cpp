@@ -1,6 +1,5 @@
 #include <iostream>
 #include <Vulkan/VlkContext.h>
-#include "Data.h"
 #include "VlkMesh.h"
 
 VlkMesh::VlkMesh(const VlkBuffer& vlkBufferVertex, const VlkBuffer& vlkBufferIndex, const VlkTexture& vlkTexture, const uint32_t drawCount) : vlkBufferVertex(vlkBufferVertex), vlkBufferIndex(vlkBufferIndex), vlkTexture(vlkTexture), drawCount(drawCount) {
@@ -11,11 +10,13 @@ VlkMesh::VlkMesh(VlkMesh const& rhs) : vlkBufferVertex(rhs.vlkBufferVertex), vlk
 
 }
 
-VlkMesh::VlkMesh(VlkMesh&& rhs) noexcept : vlkBufferVertex(std::move(rhs.vlkBufferVertex)), vlkBufferIndex(std::move(rhs.vlkBufferIndex)), vlkTexture(std::move(rhs.vlkTexture)), m_shader(std::move(rhs.m_shader)), drawCount(rhs.drawCount) {
+VlkMesh::VlkMesh(VlkMesh&& rhs) noexcept : vlkBufferVertex(rhs.vlkBufferVertex), vlkBufferIndex(rhs.vlkBufferIndex), vlkTexture(rhs.vlkTexture), m_shader(std::move(rhs.m_shader)), drawCount(rhs.drawCount) {
 
 }
 
 void VlkMesh::draw(const VkCommandBuffer& vkCommandBuffer) const {
+    vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vlkContext.pipelineLayout, 1, 1, &vlkTexture.m_vkDescriptorSet, 0, NULL);
+    
     // Mesh
     VkDeviceSize meshOffset = 0;
     vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, &vlkBufferVertex.m_vkBuffer, &meshOffset);
@@ -79,9 +80,6 @@ void VlkMesh::draw(const VkCommandBuffer& vkCommandBuffer) const {
     VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     vkCmdSetColorWriteMaskEXT(vkCommandBuffer, 0, 1, &colorWriteMask);
 
-    // Push constants
-    int ids[] = { 0, 0 };
-    vkCmdPushConstants(vkCommandBuffer, vlkContext.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ids), ids);
     vkCmdDrawIndexed(vkCommandBuffer, drawCount, 1, 0, 0, 0);
 }
 

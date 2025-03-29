@@ -7,11 +7,6 @@ layout(location = 2) in vec3 normal;
 
 layout(location = 0) out vec2 fragUV;
 
-layout(push_constant) uniform PushConstants {
-    int bufferID;
-    int textureID;
-};
-
 layout(set = 0, binding = 0) uniform UniformBufferObject {
     mat4 model;
     mat4 view;

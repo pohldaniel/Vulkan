@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include "Data.h"
 
 struct VlkContext;
 class VlkSwapchain;
@@ -18,7 +17,7 @@ public:
     VlkSwapchainElement& operator=(const VlkSwapchainElement& rhs) = delete;
     VlkSwapchainElement& operator=(VlkSwapchainElement&& rhs) = delete;
 
-    void draw(const UniformBufferObject& ubo, const std::list<VlkMesh>& meshes, std::list<VlkTexture>& textures);
+    void draw(const std::list<VlkMesh>& meshes);
 
     VlkContext* ctx;
     VlkSwapchain* swapchain;
@@ -36,18 +35,9 @@ public:
     VkFence fence;
     VkFence lastFence = nullptr;
 
-   
-    int nextUniformIndex = 0;
-
     VkRenderingAttachmentInfo colorAttachment;
     VkRenderingAttachmentInfo depthStencilAttachment;
     VkRenderingInfo renderingInfo;
     VkViewport viewport;
     VkRect2D scissor;
-
-
-    int descriptorIndex;
-
-    void draw(const VkCommandBuffer& vkCommandbuffer, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
-
 };

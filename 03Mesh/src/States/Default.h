@@ -69,4 +69,6 @@ private:
 	VlkBuffer _vertex;
 	VlkBuffer _index;
 
+	UniformBufferObject ubo;
+
 };
