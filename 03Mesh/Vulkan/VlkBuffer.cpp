@@ -9,7 +9,7 @@ VlkBuffer::VlkBuffer(VlkBuffer const& rhs) : m_vkBuffer (rhs.m_vkBuffer), m_vkDe
 
 }
 
-VlkBuffer::VlkBuffer(VlkBuffer&& rhs) : m_vkBuffer(rhs.m_vkBuffer), m_vkDeviceMemory(rhs.m_vkDeviceMemory) {
+VlkBuffer::VlkBuffer(VlkBuffer&& rhs) noexcept : m_vkBuffer(std::move(rhs.m_vkBuffer)), m_vkDeviceMemory(std::move(rhs.m_vkDeviceMemory)) {
 
 }
 

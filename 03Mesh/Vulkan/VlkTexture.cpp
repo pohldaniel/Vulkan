@@ -4,6 +4,19 @@
 #include "VlkContext.h"
 #include "VlkTexture.h"
 
+
+VlkTexture::VlkTexture() : m_vkImage(VK_NULL_HANDLE), m_vkDeviceMemory(VK_NULL_HANDLE), m_vkImageView(VK_NULL_HANDLE), m_vkDescriptorSet(VK_NULL_HANDLE) {
+
+}
+
+VlkTexture::VlkTexture(VlkTexture const& rhs) : m_vkImage(rhs.m_vkImage), m_vkDeviceMemory(rhs.m_vkDeviceMemory), m_vkImageView(rhs.m_vkImageView), m_vkDescriptorSet(rhs.m_vkDescriptorSet) {
+
+}
+
+VlkTexture::VlkTexture(VlkTexture&& rhs) noexcept : m_vkImage(std::move(rhs.m_vkImage)), m_vkDeviceMemory(std::move(rhs.m_vkDeviceMemory)), m_vkImageView(std::move(rhs.m_vkImageView)), m_vkDescriptorSet(std::move(rhs.m_vkDescriptorSet)) {
+
+}
+
 void VlkTexture::loadFromFile(std::string fileName, const bool flipVertical) {
     int numComponents, width, height;
     unsigned char* imageData = SOIL_load_image(fileName.c_str(), &width, &height, &numComponents, SOIL_LOAD_AUTO);
@@ -58,25 +71,16 @@ void VlkTexture::loadFromFile(std::string fileName, const bool flipVertical) {
     vkFreeMemory(vlkContext.vkDevice, stagingBufferMemory, nullptr);
 
     vlkCreateImageView(m_vkImageView, m_vkImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT, { VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY });
-    //vlkAllocateDescriptorSets(m_vkDescriptorSet);
-   
-    //bind(1u);
+    allocateDescriptorSet(vlkContext.descriptorSetLayout[1]);
+    bind(0u);
 }
 
-void VlkTexture::bind(uint32_t dstBinding) {  
-    //VkDescriptorSetAllocateInfo allocInfo{};
-    //allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-    //allocInfo.descriptorPool = vlkContext.descriptorPool;
-    //allocInfo.descriptorSetCount = 1;
-    //allocInfo.pSetLayouts = &vlkContext.descriptorSetLayout;
-
-    //vkAllocateDescriptorSets(vlkContext.vkDevice, &allocInfo, &m_vkDescriptorSet);
-    //createMVP();
-    //vlkBindImageViewToDescriptorSet(m_vkImageView, m_vkDescriptorSet, dstBinding);
+void VlkTexture::allocateDescriptorSet(const VkDescriptorSetLayout& vkDescriptorSetLayout) {
+    vlkAllocateDescriptorSets(m_vkDescriptorSet, vkDescriptorSetLayout);
 }
 
-void VlkTexture::setDescriptorSet(VkDescriptorSet vkDescriptorSet) {
-    m_vkDescriptorSet = vkDescriptorSet;
+void VlkTexture::bind(uint32_t dstBinding) {
+    vlkBindImageViewToDescriptorSet(m_vkImageView, m_vkDescriptorSet, dstBinding);
 }
 
 void VlkTexture::FlipVertical(unsigned char* data, unsigned int padWidth, unsigned int height) {
@@ -89,39 +93,4 @@ void VlkTexture::FlipVertical(unsigned char* data, unsigned int padWidth, unsign
         pDestRow = &data[i * padWidth];
         memcpy(pDestRow, pSrcRow, padWidth);
     }
-}
-
-void VlkTexture::createMVP() {
-    VkBufferCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    createInfo.size = sizeof(UniformBufferObject);
-    createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    VmaAllocationCreateInfo allocInfo{};
-    allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-    vmaCreateBuffer(vlkContext.memoryAllocator, &createInfo, &allocInfo, &uniformMVP.buffer, &uniformMVP.allocation, nullptr);
-
-    vmaMapMemory(vlkContext.memoryAllocator, uniformMVP.allocation, reinterpret_cast<void**>(&uniformMappingMVP));
-
-    uniformMappingMVP->proj = glm::mat4(1.0f);
-    uniformMappingMVP->view = glm::mat4(1.0f);
-    uniformMappingMVP->model = glm::mat4(1.0f);
-
-    VkDescriptorBufferInfo bufferInfo{};
-    bufferInfo.buffer = uniformMVP.buffer;
-    bufferInfo.offset = 0;
-    bufferInfo.range = VK_WHOLE_SIZE;
-
-    VkWriteDescriptorSet descriptorWrite{};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrite.dstSet = m_vkDescriptorSet;
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.dstArrayElement = 1;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pBufferInfo = &bufferInfo;
-
-    vkUpdateDescriptorSets(vlkContext.vkDevice, 1, &descriptorWrite, 0, nullptr);
 }

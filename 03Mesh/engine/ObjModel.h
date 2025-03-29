@@ -19,6 +19,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "Camera.h"
+#include "Material.h"
 
 class ObjModel;
 
@@ -133,7 +134,7 @@ public:
 	void setMaterialIndex(short index) const;
 	short getTextureIndex() const;
 	void setTextureIndex(short index) const;
-
+	const Material& getMaterial() const;
 	void cleanup();
 	unsigned int getNumberOfTriangles();
 

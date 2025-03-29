@@ -3,29 +3,26 @@
 #include "Data.h"
 #include "VlkMesh.h"
 
-VlkMesh::VlkMesh(const VlkBuffer& vertex, const VlkBuffer& index, const uint32_t drawCount) : vertex(vertex), index(index), drawCount(drawCount) {
+VlkMesh::VlkMesh(const VlkBuffer& vlkBufferVertex, const VlkBuffer& vlkBufferIndex, const VlkTexture& vlkTexture, const uint32_t drawCount) : vlkBufferVertex(vlkBufferVertex), vlkBufferIndex(vlkBufferIndex), vlkTexture(vlkTexture), drawCount(drawCount) {
 
 }
 
-VlkMesh::VlkMesh(VlkMesh const& rhs) : vertex(rhs.vertex), index(rhs.index), drawCount(rhs.drawCount), m_shader(rhs.m_shader), uniformMVP(rhs.uniformMVP){
+VlkMesh::VlkMesh(VlkMesh const& rhs) : vlkBufferVertex(rhs.vlkBufferVertex), vlkBufferIndex(rhs.vlkBufferIndex), vlkTexture(rhs.vlkTexture), m_shader(rhs.m_shader), drawCount(rhs.drawCount) {
 
 }
 
-VlkMesh::VlkMesh(VlkMesh&& rhs) : vertex(rhs.vertex), index(rhs.index), drawCount(rhs.drawCount), m_shader(rhs.m_shader), uniformMVP(rhs.uniformMVP) {
+VlkMesh::VlkMesh(VlkMesh&& rhs) noexcept : vlkBufferVertex(std::move(rhs.vlkBufferVertex)), vlkBufferIndex(std::move(rhs.vlkBufferIndex)), vlkTexture(std::move(rhs.vlkTexture)), m_shader(std::move(rhs.m_shader)), drawCount(rhs.drawCount) {
 
 }
 
-void VlkMesh::draw(const VkCommandBuffer& vkCommandBuffer, const UniformBufferObject& ubo) const {
+void VlkMesh::draw(const VkCommandBuffer& vkCommandBuffer) const {
     // Mesh
     VkDeviceSize meshOffset = 0;
-    vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, &vertex.m_vkBuffer, &meshOffset);
-    vkCmdBindIndexBuffer(vkCommandBuffer, index.m_vkBuffer, 0, VK_INDEX_TYPE_UINT32);
+    vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, &vlkBufferVertex.m_vkBuffer, &meshOffset);
+    vkCmdBindIndexBuffer(vkCommandBuffer, vlkBufferIndex.m_vkBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     // Shader
-    VkShaderStageFlagBits stages[] = {
-        VK_SHADER_STAGE_VERTEX_BIT,
-        VK_SHADER_STAGE_FRAGMENT_BIT
-    };
+    VkShaderStageFlagBits stages[] = { VK_SHADER_STAGE_VERTEX_BIT, VK_SHADER_STAGE_FRAGMENT_BIT };
 
     vkCmdBindShadersEXT(vkCommandBuffer, sizeof(stages) / sizeof(VkShaderStageFlagBits), stages, m_shader.data());
 
@@ -57,9 +54,11 @@ void VlkMesh::draw(const VkCommandBuffer& vkCommandBuffer, const UniformBufferOb
     vertexAttributes[2].offset = 5 * sizeof(float);
 
     vkCmdSetVertexInputEXT(vkCommandBuffer, 1, &vertexBinding, sizeof(vertexAttributes) / sizeof(VkVertexInputAttributeDescription2EXT), vertexAttributes);
+
     // Input assembly settings
     vkCmdSetPrimitiveTopology(vkCommandBuffer, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     vkCmdSetPrimitiveRestartEnable(vkCommandBuffer, false);
+
     // Multisample settings
     vkCmdSetRasterizationSamplesEXT(vkCommandBuffer, VK_SAMPLE_COUNT_1_BIT);
     VkSampleMask sampleMask = 1;
@@ -67,7 +66,7 @@ void VlkMesh::draw(const VkCommandBuffer& vkCommandBuffer, const UniformBufferOb
     vkCmdSetAlphaToCoverageEnableEXT(vkCommandBuffer, false);
 
     // Color blend settings
-    VkBool32 colorBlend = true;
+    VkBool32 colorBlend = false;
     vkCmdSetColorBlendEnableEXT(vkCommandBuffer, 0, 1, &colorBlend);
     VkColorBlendEquationEXT colorBlendEquation{};
     colorBlendEquation.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA;
@@ -80,60 +79,12 @@ void VlkMesh::draw(const VkCommandBuffer& vkCommandBuffer, const UniformBufferOb
     VkColorComponentFlags colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     vkCmdSetColorWriteMaskEXT(vkCommandBuffer, 0, 1, &colorWriteMask);
 
-    // Uniform
-    uniformMappingMVP->model = ubo.model;
-    uniformMappingMVP->view = ubo.view;
-    uniformMappingMVP->proj = ubo.proj;
-
-    std::cout << uniformMappingMVP->proj[0][0] << "  " << uniformMappingMVP->proj[0][1] << "  " << uniformMappingMVP->proj[0][2] << "  " << uniformMappingMVP->proj[0][3] << std::endl;
-    std::cout << uniformMappingMVP->proj[1][0] << "  " << uniformMappingMVP->proj[1][1] << "  " << uniformMappingMVP->proj[1][2] << "  " << uniformMappingMVP->proj[1][3] << std::endl;
-    std::cout << uniformMappingMVP->proj[2][0] << "  " << uniformMappingMVP->proj[2][1] << "  " << uniformMappingMVP->proj[2][2] << "  " << uniformMappingMVP->proj[2][3] << std::endl;
-    std::cout << uniformMappingMVP->proj[3][0] << "  " << uniformMappingMVP->proj[3][1] << "  " << uniformMappingMVP->proj[3][2] << "  " << uniformMappingMVP->proj[3][3] << std::endl;
     // Push constants
-    int ids[] = {
-        1,
-        0
-    };
-
+    int ids[] = { 0, 0 };
     vkCmdPushConstants(vkCommandBuffer, vlkContext.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(ids), ids);
-
     vkCmdDrawIndexed(vkCommandBuffer, drawCount, 1, 0, 0, 0);
 }
 
 void VlkMesh::setShader(std::vector<VkShaderEXT>& shader) {
     m_shader = shader;
-}
-
-void VlkMesh::createMVP(const VmaAllocator& vmaAllocator, const VkDescriptorSet& vkDescriptorSet) {
-    VkBufferCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    createInfo.size = sizeof(UniformBufferObject);
-    createInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    VmaAllocationCreateInfo allocInfo{};
-    allocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-
-    vmaCreateBuffer(vmaAllocator, &createInfo, &allocInfo, &uniformMVP.buffer, &uniformMVP.allocation, nullptr);
-    vmaMapMemory(vmaAllocator, uniformMVP.allocation, reinterpret_cast<void**>(&uniformMappingMVP));
-
-    uniformMappingMVP->proj = glm::mat4(1.0f);
-    uniformMappingMVP->view = glm::mat4(1.0f);
-    uniformMappingMVP->model = glm::mat4(1.0f);
-
-    VkDescriptorBufferInfo bufferInfo = {};
-    bufferInfo.buffer = uniformMVP.buffer;
-    bufferInfo.offset = 0;
-    bufferInfo.range = VK_WHOLE_SIZE;
-
-    VkWriteDescriptorSet descriptorWrite{};
-    descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    descriptorWrite.dstSet = vkDescriptorSet;
-    descriptorWrite.dstBinding = 0;
-    descriptorWrite.dstArrayElement = 1;
-    descriptorWrite.descriptorCount = 1;
-    descriptorWrite.pBufferInfo = &bufferInfo;
-
-    vkUpdateDescriptorSets(vlkContext.vkDevice, 1, &descriptorWrite, 0, nullptr);
 }

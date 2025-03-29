@@ -1,5 +1,4 @@
 #include "ObjModel.h"
-#include "Material.h"
 
 ObjModel::ObjModel() : m_center(glm::vec3(0.0f, 0.0f, 0.0f)) {
 
@@ -1548,6 +1547,10 @@ void ObjMesh::setTextureIndex(short index) const {
 
 unsigned int ObjMesh::getNumberOfTriangles() {
 	return m_drawCount / 3;
+}
+
+const Material& ObjMesh::getMaterial() const {
+	return Material::GetMaterials()[m_materialIndex];
 }
 ////////////////////////////////////////////////////////////////////////////////
 void IndexBufferCreator::createIndexBuffer() {

@@ -68,7 +68,7 @@ extern "C" {
     void vlkResize();
     void vlkToggleVerticalSync();
     void vlkToggleWireframe();
-    void vlkDraw(const std::list<VlkMesh*>& meshes, std::vector<VlkTexture>& textures);
+    void vlkDraw(const std::list<VlkMesh>& meshes, std::list<VlkTexture>& textures);
 
     void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size);
     void vlkCreateBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, uint32_t size, VkBufferUsageFlags vkBufferUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags);

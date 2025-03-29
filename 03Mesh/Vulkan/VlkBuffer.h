@@ -7,7 +7,7 @@ public:
 
 	VlkBuffer();
 	VlkBuffer(VlkBuffer const& rhs);
-	VlkBuffer(VlkBuffer&& rhs);
+	VlkBuffer(VlkBuffer&& rhs) noexcept;
 
 
 	void createBufferVertex(const void* data, uint32_t size);

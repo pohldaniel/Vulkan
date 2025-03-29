@@ -133,7 +133,7 @@ void vlkToggleWireframe() {
         vlkContext.vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
 }
 
-void vlkDraw(const std::list<VlkMesh*>& meshes, std::vector<VlkTexture>& textures) {
+void vlkDraw(const std::list<VlkMesh>& meshes, std::list<VlkTexture>& textures) {
     vlkContext.swapchain->draw(vlkContext.ubo, meshes, textures);
 }
 

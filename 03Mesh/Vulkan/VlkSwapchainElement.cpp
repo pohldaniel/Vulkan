@@ -65,7 +65,7 @@ VlkSwapchainElement::~VlkSwapchainElement(){
     vkDestroyImageView(ctx->vkDevice, depthImageView, nullptr);
 }
 
-void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes, std::vector<VlkTexture>& textures){
+void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const std::list<VlkMesh>& meshes, std::list<VlkTexture>& textures){
    
     
     vlkBeginCommandBuffer(commandBuffer);
@@ -101,11 +101,10 @@ void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const std::list<V
     vlkContext.uniformMappingMVP->proj = ubo.proj;
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 0, 1, &vlkContext.m_vkDescriptorSet, 0, NULL);
 
-    // Bind global descriptor set
-    for (std::pair<std::list<VlkMesh*>::const_iterator, std::vector<VlkTexture>::iterator> i(meshes.begin(), textures.begin());
+    for (std::pair<std::list<VlkMesh>::const_iterator, std::list<VlkTexture>::iterator> i(meshes.begin(), textures.begin());
         i.first != meshes.end(); ++i.first, ++i.second) {
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 1, 1, &(*i.second).m_vkDescriptorSet, 0, NULL);
-        draw(commandBuffer, ubo, (*i.first)->vertex.m_vkBuffer, (*i.first)->index.m_vkBuffer, (*i.first)->drawCount, &(*i.second));
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 1, 1, &(*i.first).vlkTexture.m_vkDescriptorSet, 0, NULL);
+        draw(commandBuffer, (*i.first).vlkBufferVertex.m_vkBuffer, (*i.first).vlkBufferIndex.m_vkBuffer, (*i.first).drawCount);
     }
     
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
@@ -126,7 +125,7 @@ void VlkSwapchainElement::draw(const UniformBufferObject& ubo, const std::list<V
     //vlkQueueSubmit(commandBuffer);
 }
 
-void VlkSwapchainElement::draw(const VkCommandBuffer& vkCommandbuffer, const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount, VlkTexture* texture) {
+void VlkSwapchainElement::draw(const VkCommandBuffer& vkCommandbuffer, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount) {
 
     // Mesh
     VkDeviceSize meshOffset = 0;

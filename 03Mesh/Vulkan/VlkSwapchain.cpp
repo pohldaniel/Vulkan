@@ -38,7 +38,7 @@ VlkSwapchain::~VlkSwapchain(){
     vkDestroySwapchainKHR(ctx->vkDevice, swapchain, VK_NULL_HANDLE);
 }
 
-bool VlkSwapchain::draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes, std::vector<VlkTexture>& textures){
+bool VlkSwapchain::draw(const UniformBufferObject& ubo, const std::list<VlkMesh>& meshes, std::list<VlkTexture>& textures){
     VkResult result;
  
     const VlkSwapchainElement* currentElement = elements.at(currentFrame);

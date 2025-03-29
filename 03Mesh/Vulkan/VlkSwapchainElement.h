@@ -18,7 +18,7 @@ public:
     VlkSwapchainElement& operator=(const VlkSwapchainElement& rhs) = delete;
     VlkSwapchainElement& operator=(VlkSwapchainElement&& rhs) = delete;
 
-    void draw(const UniformBufferObject& ubo, const std::list<VlkMesh*>& meshes, std::vector<VlkTexture>& textures);
+    void draw(const UniformBufferObject& ubo, const std::list<VlkMesh>& meshes, std::list<VlkTexture>& textures);
 
     VlkContext* ctx;
     VlkSwapchain* swapchain;
@@ -46,12 +46,8 @@ public:
     VkRect2D scissor;
 
 
-
-
-   
-
     int descriptorIndex;
 
-    void draw(const VkCommandBuffer& vkCommandbuffer, const UniformBufferObject& ubo, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount, VlkTexture* texture);
+    void draw(const VkCommandBuffer& vkCommandbuffer, const VkBuffer& vertex, const VkBuffer& index, const uint32_t drawCount);
 
 };

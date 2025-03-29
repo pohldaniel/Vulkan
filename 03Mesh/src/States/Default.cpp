@@ -40,25 +40,6 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 	vlkCreateBuffer(m_dstIndexBuffer, m_dstIndexBufferMemory, size, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 	vlkCopyBuffer(m_srcIndexBuffer, m_dstIndexBuffer, size);
 
-	const std::vector<Material>& materials = Material::GetMaterials();
-
-	for (const Material& material : materials) {
-		m_textures.push_back(VlkTexture());
-		m_textures.back().loadFromFile(material.textures[0], true);		
-	}
-
-	vlkAllocateDescriptorSets(m_textures[0].m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
-	vlkBindImageViewToDescriptorSet(m_textures[0].m_vkImageView, m_textures[0].m_vkDescriptorSet, 0u);
-
-	vlkAllocateDescriptorSets(m_textures[1].m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
-	vlkBindImageViewToDescriptorSet(m_textures[1].m_vkImageView, m_textures[1].m_vkDescriptorSet, 0u);
-
-	vlkAllocateDescriptorSets(m_textures[2].m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
-	vlkBindImageViewToDescriptorSet(m_textures[2].m_vkImageView, m_textures[2].m_vkDescriptorSet, 0u);
-
-	vlkAllocateDescriptorSets(m_textures[3].m_vkDescriptorSet, vlkContext.descriptorSetLayout[1]);
-	vlkBindImageViewToDescriptorSet(m_textures[3].m_vkImageView, m_textures[3].m_vkDescriptorSet, 0u);
-
 	for (ObjMesh* mesh : m_model.getMeshes()) {
 		m_vertexBuffer.push_back(VlkBuffer());
 		m_vertexBuffer.back().createBufferVertex(reinterpret_cast<const void*>(mesh->getVertexBuffer().data()), sizeof(float) * mesh->getVertexBuffer().size());
@@ -66,8 +47,11 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 		m_indexBuffer.push_back(VlkBuffer());
 		m_indexBuffer.back().createBufferIndex(reinterpret_cast<const void*>(mesh->getIndexBuffer().data()), sizeof(unsigned int) * mesh->getIndexBuffer().size());
 		
-		m_meshes.push_back(new VlkMesh(m_vertexBuffer.back(), m_indexBuffer.back(), mesh->getIndexBuffer().size()));
-		m_meshes.back()->setShader(vlkContext.shader);
+		m_textures.push_back(VlkTexture());
+		m_textures.back().loadFromFile(mesh->getMaterial().textures[0], true);
+
+		m_meshes.push_back(VlkMesh(m_vertexBuffer.back(), m_indexBuffer.back(), m_textures.back(), mesh->getIndexBuffer().size()));
+		m_meshes.back().setShader(vlkContext.shader);
 	}
 }
 

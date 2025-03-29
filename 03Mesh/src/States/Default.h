@@ -59,10 +59,10 @@ private:
 	VkDeviceMemory textureImageMemory;
 	VkImageView textureView;
 
-	std::vector<VlkTexture> m_textures;
+	std::list<VlkTexture> m_textures;
 	std::list<VlkBuffer> m_vertexBuffer;
 	std::list<VlkBuffer> m_indexBuffer;
-	std::list<VlkMesh*> m_meshes;
+	std::list<VlkMesh> m_meshes;
 
 	VlkMesh* m_mesh;
 
