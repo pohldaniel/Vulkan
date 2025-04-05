@@ -83,32 +83,32 @@ char* platform_read_file2(const char* path, uint32_t* length) {
 void vlkInit(void* window) {
     vlkCreateDevice(vlkContext, window);
 	
-    vkGetDeviceQueue(vlkContext.vkDevice, vlkContext.queueFamilyIndex, 0, &vlkContext.vkQueue);
+    vlkGetDeviceQueue(vlkContext.queueFamilyIndex, vlkContext.vkQueue);
     
     vlkCreateCommandPool(vlkContext.vkCommandPool);
     vlkCreateCommandBuffer(vlkContext.vkCommandBuffer);
     vlkCreateDescriptorPool(vlkContext.descriptorPool);
 
-    vlkContext.createDescriptorSetLayout();
+    vlkContext.createDescriptorSetLayout(vlkContext.vkDevice, vlkContext.vkDescriptorSetLayouts);
     
-    vlkCreatePipelineLayout(vlkContext.descriptorSetLayout, { vlkContext.pushConstantRange }, vlkContext.pipelineLayout);
+    vlkCreatePipelineLayout(vlkContext.vkDescriptorSetLayouts, { }, vlkContext.vkPipelineLayout);
     vlkCreateSampler(vlkContext.sampler);
 
     //Allocate Ubo
-    vlkAllocateDescriptorSet(vlkContext.vkDescriptorSetUbo, vlkContext.descriptorSetLayout[0]);
+    vlkAllocateDescriptorSet(vlkContext.vkDescriptorSetUbo, vlkContext.vkDescriptorSetLayouts[0]);
 
     vlkCreateUniformBuffer(vlkContext.vkBufferUniform, vlkContext.vkDeviceMemoryUniform, vlkContext.uniformMappingMVP, 3 * 16 * sizeof(float));
     vlkBindBufferToDescriptorSet(vlkContext.vkBufferUniform, vlkContext.vkDescriptorSetUbo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0u);
 
     vlkContext.createShaders(vlkContext.vkDevice);
     vlkContext.drawUi = true;
-    vlkContext.swapchain = new VlkSwapchain(&vlkContext, Application::Width, Application::Height, vlkContext.vkPresentModeKHR);
+    vlkContext.swapchain = new VlkSwapchain(Application::Width, Application::Height, vlkContext.vkPresentModeKHR);
 }
 
 void vlkResize() {
     vlkWaitIdle();
 
-    vlkContext.newSwapchain = new VlkSwapchain(&vlkContext, Application::Width, Application::Height, vlkContext.vkPresentModeKHR, vlkContext.swapchain->swapchain);
+    vlkContext.newSwapchain = new VlkSwapchain(Application::Width, Application::Height, vlkContext.vkPresentModeKHR, vlkContext.swapchain->swapchain);
     delete vlkContext.swapchain;
     vlkContext.swapchain = vlkContext.newSwapchain;
 }
@@ -121,7 +121,7 @@ void vlkToggleVerticalSync() {
 
     vlkWaitIdle();
 
-    vlkContext.newSwapchain = new VlkSwapchain(&vlkContext, Application::Width, Application::Height, vlkContext.vkPresentModeKHR, vlkContext.swapchain->swapchain);
+    vlkContext.newSwapchain = new VlkSwapchain(Application::Width, Application::Height, vlkContext.vkPresentModeKHR, vlkContext.swapchain->swapchain);
     delete vlkContext.swapchain;
     vlkContext.swapchain = vlkContext.newSwapchain;
 }
@@ -155,6 +155,11 @@ void vlkSetDrawUI(bool flag) {
 
 void vlkDraw(const std::list<VlkMesh>& meshes) {
     vlkContext.swapchain->draw(meshes);
+}
+
+void vlkGetDeviceQueue(uint32_t queueFamilyIndex, VkQueue& vkQueue) {
+    const VkDevice& vkDevice = vlkContext.vkDevice;
+    vkGetDeviceQueue(vkDevice, queueFamilyIndex, 0, &vkQueue);
 }
 
 void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size) {
@@ -491,7 +496,7 @@ void vlkCompileSahder(const char* path, shaderc_shader_kind kind, std::vector<ui
     memcpy(shaderCode.data(), res, shaderc_result_get_length(result));
 }
 
-std::vector<VkShaderEXT>& vlkCreateShader(const std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts, const VkPushConstantRange& vkPushConstantRange, const std::vector<uint32_t>& vertexCode, const std::vector<uint32_t>& fragmentCode, std::vector<VkShaderEXT>& shader) {
+std::vector<VkShaderEXT>& vlkCreateShader(const std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts,  const std::vector<uint32_t>& vertexCode, const std::vector<uint32_t>& fragmentCode, std::vector<VkShaderEXT>& shader) {
     const VkDevice& vkDevice = vlkContext.vkDevice;
 
     VkShaderCreateInfoEXT vkShaderCreateInfoEXT[2] = {{}};
@@ -504,8 +509,6 @@ std::vector<VkShaderEXT>& vlkCreateShader(const std::vector<VkDescriptorSetLayou
     vkShaderCreateInfoEXT[0].pCode = vertexCode.data();
     vkShaderCreateInfoEXT[0].setLayoutCount = vkDescriptorSetLayouts.size();
     vkShaderCreateInfoEXT[0].pSetLayouts = vkDescriptorSetLayouts.data();
-    //vkShaderCreateInfoEXT[0].pushConstantRangeCount = 1;
-    //vkShaderCreateInfoEXT[0].pPushConstantRanges = &vkPushConstantRange;
     vkShaderCreateInfoEXT[0].nextStage = VK_SHADER_STAGE_FRAGMENT_BIT;
 
     vkShaderCreateInfoEXT[1].sType = VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
@@ -517,8 +520,6 @@ std::vector<VkShaderEXT>& vlkCreateShader(const std::vector<VkDescriptorSetLayou
     vkShaderCreateInfoEXT[1].pCode = fragmentCode.data();
     vkShaderCreateInfoEXT[1].setLayoutCount = vkDescriptorSetLayouts.size();
     vkShaderCreateInfoEXT[1].pSetLayouts = vkDescriptorSetLayouts.data();
-    //vkShaderCreateInfoEXT[1].pushConstantRangeCount = 1;
-    //vkShaderCreateInfoEXT[1].pPushConstantRanges = &vkPushConstantRange;
 
     shader.resize(2);
     vkCreateShadersEXT(vkDevice, 2, vkShaderCreateInfoEXT, VK_NULL_HANDLE, shader.data());
@@ -870,12 +871,12 @@ void VlkContext::createShaders(const VkDevice& vkDevice){
     std::vector<uint32_t> vertexCode, fragmentCode;
     vlkCompileSahder("res/shader/mesh.vert", shaderc_vertex_shader, vertexCode);
     vlkCompileSahder("res/shader/mesh.frag", shaderc_fragment_shader, fragmentCode);
-    vlkCreateShader(descriptorSetLayout, pushConstantRange, vertexCode, fragmentCode, shader);
+    vlkCreateShader(vkDescriptorSetLayouts,  vertexCode, fragmentCode, shader);
 }
 
-void VlkContext::createDescriptorSetLayout() {
-    descriptorSetLayout.resize(2);
-    
+void VlkContext::createDescriptorSetLayout(const VkDevice& vkDevice, std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts) {
+    vkDescriptorSetLayouts.resize(2);
+
     VkDescriptorSetLayoutBinding bindings[2]{};
     bindings[0].binding = 0;
     bindings[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -899,7 +900,7 @@ void VlkContext::createDescriptorSetLayout() {
     createInfo.bindingCount = 1;
     createInfo.pBindings = &bindings[0];
 
-    vkCreateDescriptorSetLayout(vkDevice, &createInfo, nullptr, &descriptorSetLayout[0]);
+    vkCreateDescriptorSetLayout(vkDevice, &createInfo, nullptr, &vkDescriptorSetLayouts[0]);
 
     bindingFlagsCreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
     bindingFlagsCreateInfo.pBindingFlags = bindingFlags;
@@ -909,6 +910,6 @@ void VlkContext::createDescriptorSetLayout() {
     createInfo.pNext = &bindingFlagsCreateInfo;
     createInfo.bindingCount = 1;
     createInfo.pBindings = &bindings[1];
-   
-    vkCreateDescriptorSetLayout(vkDevice, &createInfo, nullptr, &descriptorSetLayout[1]);
+
+    vkCreateDescriptorSetLayout(vkDevice, &createInfo, nullptr, &vkDescriptorSetLayouts[1]);
 }

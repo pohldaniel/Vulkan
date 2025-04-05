@@ -11,7 +11,8 @@ class VlkTexture;
 class VlkSwapchain{
 
 public:
-    VlkSwapchain(VlkContext* ctx, unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VkSwapchainKHR vkOldSwapchainKHR = NULL);
+
+    VlkSwapchain(unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VkSwapchainKHR vkOldSwapchainKHR = NULL);
     VlkSwapchain(const VlkSwapchain& rhs) = delete;
     VlkSwapchain(VlkSwapchain&& rhs) = delete;
     ~VlkSwapchain();
@@ -20,8 +21,6 @@ public:
     VlkSwapchain& operator=(VlkSwapchain&& rhs) = delete;
 
     bool draw(const std::list<VlkMesh>& meshes);
-
-    VlkContext* ctx;
 
     VkSwapchainKHR swapchain;
     VkFormat format;

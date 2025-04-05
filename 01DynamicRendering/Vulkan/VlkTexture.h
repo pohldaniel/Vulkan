@@ -10,7 +10,7 @@ class VlkTexture {
 
 public:
 
-	VlkTexture();
+	VlkTexture(const VkDescriptorSetLayout& vkDescriptorSetLayout);
 	VlkTexture(VlkTexture const& rhs);
 	VlkTexture(VlkTexture&& rhs) noexcept;
 
@@ -22,6 +22,7 @@ private:
 	VkDeviceMemory m_vkDeviceMemory;
 	VkImageView m_vkImageView;
 	VkDescriptorSet m_vkDescriptorSet;
+	const VkDescriptorSetLayout& vkDescriptorSetLayout;
 
 	unsigned int m_width;
 	unsigned int m_height;

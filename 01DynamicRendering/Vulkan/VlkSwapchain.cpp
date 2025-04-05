@@ -3,50 +3,56 @@
 #include "VlkContext.h"
 #include "VlkTexture.h"
 
-VlkSwapchain::VlkSwapchain(VlkContext* ctx, unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VkSwapchainKHR vkOldSwapchainKHR)
-    : ctx(ctx)
-    , width(width)
+VlkSwapchain::VlkSwapchain(unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VkSwapchainKHR vkOldSwapchainKHR)
+    : width(width)
     , height(height)
     , currentFrame(0)
     , imageIndex(0)
     , imageCount(0)
     , swapchain(VK_NULL_HANDLE)
 {
-    
+    const VkDevice& vkDevice = vlkContext.vkDevice;
+    const VkFormat vkDepthFormat = vlkContext.vkDepthFormat;
+
     vlkCreateSwapChain(swapchain, format, width, height, vkPresentModeKHR, vkOldSwapchainKHR);
-    vkGetSwapchainImagesKHR(ctx->vkDevice, swapchain, &imageCount, VK_NULL_HANDLE);
+    vkGetSwapchainImagesKHR(vkDevice, swapchain, &imageCount, VK_NULL_HANDLE);
     images.resize(imageCount);
-    vkGetSwapchainImagesKHR(ctx->vkDevice, swapchain, &imageCount, images.data());
+    vkGetSwapchainImagesKHR(vkDevice, swapchain, &imageCount, images.data());
 
     depthImages.resize(imageCount);
     depthImagesMemory.resize(imageCount);
 
     for (uint32_t i = 0; i < imageCount; i++) {
-        vlkCreateImage(depthImages[i], depthImagesMemory[i], width, height, ctx->vkDepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        vlkCreateImage(depthImages[i], depthImagesMemory[i], width, height, vkDepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         elements.push_back(new VlkSwapchainElement(this, images[i], depthImages[i]));
     }
 }
 
-VlkSwapchain::~VlkSwapchain(){
-    for (VlkSwapchainElement* element : elements){
+VlkSwapchain::~VlkSwapchain() {
+    const VkDevice& vkDevice = vlkContext.vkDevice;
+
+    for (VlkSwapchainElement* element : elements) {
         delete element;
     }
 
     for (uint32_t i = 0; i < imageCount; i++) {
         vlkDestroyImage(depthImages[i], depthImagesMemory[i]);
     }
-    vkDestroySwapchainKHR(ctx->vkDevice, swapchain, VK_NULL_HANDLE);
+    vkDestroySwapchainKHR(vkDevice, swapchain, VK_NULL_HANDLE);
 }
 
-bool VlkSwapchain::draw(const std::list<VlkMesh>& meshes){
-    VkResult result;
- 
+bool VlkSwapchain::draw(const std::list<VlkMesh>& meshes) {
+    const VkDevice& vkDevice = vlkContext.vkDevice;
+    const VkQueue& vkQueue = vlkContext.vkQueue;
+
     const VlkSwapchainElement* currentElement = elements.at(currentFrame);
 
-    vkWaitForFences(ctx->vkDevice, 1, &currentElement->fence, true, std::numeric_limits<uint64_t>::max());
+    VkResult result;
+
+    vkWaitForFences(vkDevice, 1, &currentElement->fence, true, std::numeric_limits<uint64_t>::max());
 
     result = vkAcquireNextImageKHR(
-        ctx->vkDevice,
+        vkDevice,
         swapchain,
         std::numeric_limits<uint64_t>::max(),
         currentElement->startSemaphore,
@@ -67,11 +73,11 @@ bool VlkSwapchain::draw(const std::list<VlkMesh>& meshes){
 
     if (element->lastFence)
     {
-        vkWaitForFences(ctx->vkDevice, 1, &element->lastFence, true, std::numeric_limits<uint64_t>::max());
+        vkWaitForFences(vkDevice, 1, &element->lastFence, true, std::numeric_limits<uint64_t>::max());
     }
     element->lastFence = currentElement->fence;
 
-    vkResetFences(ctx->vkDevice, 1, &currentElement->fence);
+    vkResetFences(vkDevice, 1, &currentElement->fence);
 
     element->draw(meshes);
 
@@ -87,7 +93,7 @@ bool VlkSwapchain::draw(const std::list<VlkMesh>& meshes){
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = &currentElement->endSemaphore;
 
-    vkQueueSubmit(ctx->vkQueue, 1, &submitInfo, currentElement->fence);
+    vkQueueSubmit(vkQueue, 1, &submitInfo, currentElement->fence);
 
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
@@ -97,11 +103,12 @@ bool VlkSwapchain::draw(const std::list<VlkMesh>& meshes){
     presentInfo.pSwapchains = &swapchain;
     presentInfo.pImageIndices = &imageIndex;
 
-    result = vkQueuePresentKHR(ctx->vkQueue, &presentInfo);
+    result = vkQueuePresentKHR(vkQueue, &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR){
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         return true;
-    }else if (result < 0){
+    }
+    else if (result < 0) {
         std::cerr << "Failure running 'vkQueuePresentKHR': " << result << std::endl;
     }
 

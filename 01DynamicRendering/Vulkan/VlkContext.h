@@ -13,7 +13,7 @@ struct VlkContext {
 
 
     void createShaders(const VkDevice& vkDevice);
-    void createDescriptorSetLayout();
+    void createDescriptorSetLayout(const VkDevice& vkDevice, std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts);
 
     VkExtent2D screenSize;
     VkInstance vkInstance;
@@ -30,10 +30,10 @@ struct VlkContext {
 
     VkDescriptorPool descriptorPool;
 
-    std::vector<VkDescriptorSetLayout> descriptorSetLayout;
+    std::vector<VkDescriptorSetLayout> vkDescriptorSetLayouts;
 
-    VkPushConstantRange pushConstantRange;
-    VkPipelineLayout pipelineLayout;
+
+    VkPipelineLayout vkPipelineLayout;
     VkSampler sampler;
     std::vector<VkShaderEXT> shader;
     VkQueue vkQueue;
@@ -70,6 +70,8 @@ extern "C" {
     void vlkToggleUI();
     void vlkSetDrawUI(bool flag);
     void vlkDraw(const std::list<VlkMesh>& meshes);
+
+    void vlkGetDeviceQueue(uint32_t queueFamilyIndex, VkQueue& vkQueue);
 
     void vlkMapBuffer(const VkDeviceMemory& vkDeviceMemory, const void* data, uint32_t size);
     void vlkCreateBuffer(VkBuffer& vkBuffer, VkDeviceMemory& vkDeviceMemory, uint32_t size, VkBufferUsageFlags vkBufferUsageFlags, VkMemoryPropertyFlags vkMemoryPropertyFlags);

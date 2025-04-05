@@ -15,8 +15,8 @@ VlkMesh::VlkMesh(VlkMesh&& rhs) noexcept : vlkBufferVertex(rhs.vlkBufferVertex),
 }
 
 void VlkMesh::draw(const VkCommandBuffer& vkCommandBuffer) const {
-    vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vlkContext.pipelineLayout, 1, 1, &vlkTexture.m_vkDescriptorSet, 0, NULL);
-    
+    vkCmdBindDescriptorSets(vkCommandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vlkContext.vkPipelineLayout, 1, 1, &vlkTexture.m_vkDescriptorSet, 0, NULL);
+
     // Mesh
     VkDeviceSize meshOffset = 0;
     vkCmdBindVertexBuffers(vkCommandBuffer, 0, 1, &vlkBufferVertex.m_vkBuffer, &meshOffset);

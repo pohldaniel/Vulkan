@@ -6,9 +6,10 @@ class VlkSwapchain;
 class VlkTexture;
 class VlkMesh;
 
-class VlkSwapchainElement
-{
+class VlkSwapchainElement{
+
 public:
+
     VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image, VkImage depthImage);
     VlkSwapchainElement(const VlkSwapchainElement& rhs) = delete;
     VlkSwapchainElement(VlkSwapchainElement&& rhs) = delete;
@@ -19,7 +20,6 @@ public:
 
     void draw(const std::list<VlkMesh>& meshes);
 
-    VlkContext* ctx;
     VlkSwapchain* swapchain;
 
     VkCommandBuffer commandBuffer;

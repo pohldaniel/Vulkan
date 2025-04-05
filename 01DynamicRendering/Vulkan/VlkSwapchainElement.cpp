@@ -6,7 +6,8 @@
 #include "VlkMesh.h"
 #include "VlkTexture.h"
 
-VlkSwapchainElement::VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image, VkImage depthImage) : ctx(swapchain->ctx), image(image), depthImage(depthImage), swapchain(swapchain) {
+VlkSwapchainElement::VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image, VkImage depthImage) : image(image), depthImage(depthImage), swapchain(swapchain) {
+    const VkFormat vkDepthFormat = vlkContext.vkDepthFormat;
 
     vlkCreateCommandBuffer(commandBuffer);
     vlkCreateSemaphore(startSemaphore);
@@ -14,7 +15,7 @@ VlkSwapchainElement::VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image,
     vlkCreateFence(fence);
 
     vlkCreateImageView(imageView, image, swapchain->format, VK_IMAGE_ASPECT_COLOR_BIT, { VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY , VK_COMPONENT_SWIZZLE_IDENTITY });
-    vlkCreateImageView(depthImageView, depthImage, ctx->vkDepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
+    vlkCreateImageView(depthImageView, depthImage, vkDepthFormat, VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
 
     {
         colorAttachment = {};
@@ -57,16 +58,21 @@ VlkSwapchainElement::VlkSwapchainElement(VlkSwapchain* swapchain, VkImage image,
 }
 
 VlkSwapchainElement::~VlkSwapchainElement(){
-    vkFreeCommandBuffers(ctx->vkDevice, ctx->vkCommandPool, 1, &commandBuffer);
-    vkDestroySemaphore(ctx->vkDevice, startSemaphore, nullptr);
-    vkDestroySemaphore(ctx->vkDevice, endSemaphore, nullptr);
-    vkDestroyFence(ctx->vkDevice, fence, nullptr);
-    vkDestroyImageView(ctx->vkDevice, imageView, nullptr);
-    vkDestroyImageView(ctx->vkDevice, depthImageView, nullptr);
+    const VkDevice& vkDevice = vlkContext.vkDevice;
+    const VkCommandPool& vkCommandPool = vlkContext.vkCommandPool;
+
+    vkFreeCommandBuffers(vkDevice, vkCommandPool, 1, &commandBuffer);
+    vkDestroySemaphore(vkDevice, startSemaphore, nullptr);
+    vkDestroySemaphore(vkDevice, endSemaphore, nullptr);
+    vkDestroyFence(vkDevice, fence, nullptr);
+    vkDestroyImageView(vkDevice, imageView, nullptr);
+    vkDestroyImageView(vkDevice, depthImageView, nullptr);
 }
 
 void VlkSwapchainElement::draw(const std::list<VlkMesh>& meshes){
-   
+    const VkPolygonMode vkPolygonMode = vlkContext.vkPolygonMode;
+    const VkPipelineLayout vkPipelineLayout = vlkContext.vkPipelineLayout;
+    const bool drawUi = vlkContext.drawUi;
     
     vlkBeginCommandBuffer(commandBuffer);
 
@@ -85,7 +91,7 @@ void VlkSwapchainElement::draw(const std::list<VlkMesh>& meshes){
   
     vkCmdSetViewportWithCount(commandBuffer, 1, &viewport);
     vkCmdSetScissorWithCount(commandBuffer, 1, &scissor);
-    vkCmdSetPolygonModeEXT(commandBuffer, ctx->vkPolygonMode);
+    vkCmdSetPolygonModeEXT(commandBuffer, vkPolygonMode);
     vkCmdSetDepthWriteEnable(commandBuffer, VK_TRUE);
     vkCmdSetDepthTestEnable(commandBuffer, VK_TRUE);
     vkCmdSetStencilTestEnable(commandBuffer, VK_FALSE);
@@ -96,14 +102,15 @@ void VlkSwapchainElement::draw(const std::list<VlkMesh>& meshes){
     vkCmdSetLineWidth(commandBuffer, 2.0f);
 
    
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, ctx->pipelineLayout, 0, 1, &vlkContext.vkDescriptorSetUbo, 0, NULL);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipelineLayout, 0, 1, &vlkContext.vkDescriptorSetUbo, 0, NULL);
 
     for (std::list<VlkMesh>::const_iterator mesh = meshes.begin(); mesh != meshes.end(); ++mesh) {
         (*mesh).draw(commandBuffer);
     }
     
-    if(ctx->drawUi)
+    if(drawUi)
       ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
     // End rendering
     vkCmdEndRendering(commandBuffer);
 
