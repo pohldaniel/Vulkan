@@ -82,27 +82,22 @@ char* platform_read_file2(const char* path, uint32_t* length) {
 
 void vlkInit(void* window) {
     vlkCreateDevice(vlkContext, window);
-	
+
+    //vkGetDeviceQueue(vlkContext.vkDevice, vlkContext.queueFamilyIndex, 0, &vlkContext.vkQueue);
     vlkGetDeviceQueue(vlkContext.queueFamilyIndex, vlkContext.vkQueue);
-    
     vlkCreateCommandPool(vlkContext.vkCommandPool);
     vlkCreateCommandBuffer(vlkContext.vkCommandBuffer);
-    vlkCreateDescriptorPool(vlkContext.descriptorPool);
+    vlkCreateDescriptorPool(vlkContext.vkDescriptorPool);
+
+    vlkContext.swapchain = new VlkSwapchain(Application::Width, Application::Height, vlkContext.vkPresentModeKHR);
 
     vlkContext.createDescriptorSetLayout(vlkContext.vkDevice, vlkContext.vkDescriptorSetLayouts);
-    
+    vlkContext.createShaders(vlkContext.vkDevice);
+
     vlkCreatePipelineLayout(vlkContext.vkDescriptorSetLayouts, { }, vlkContext.vkPipelineLayout);
     vlkCreateSampler(vlkContext.sampler);
 
-    //Allocate Ubo
-    vlkAllocateDescriptorSet(vlkContext.vkDescriptorSetUbo, vlkContext.vkDescriptorSetLayouts[0]);
-
-    vlkCreateUniformBuffer(vlkContext.vkBufferUniform, vlkContext.vkDeviceMemoryUniform, vlkContext.uniformMappingMVP, 3 * 16 * sizeof(float));
-    vlkBindBufferToDescriptorSet(vlkContext.vkBufferUniform, vlkContext.vkDescriptorSetUbo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0u);
-
-    vlkContext.createShaders(vlkContext.vkDevice);
     vlkContext.drawUi = true;
-    vlkContext.swapchain = new VlkSwapchain(Application::Width, Application::Height, vlkContext.vkPresentModeKHR);
 }
 
 void vlkResize() {
@@ -579,7 +574,7 @@ void vlkCreateDescriptorPool(VkDescriptorPool& vkDescriptorPool) {
 
 void vlkAllocateDescriptorSet(VkDescriptorSet& vkDescriptorSet, const VkDescriptorSetLayout& vkDescriptorSetLayout) {
     const VkDevice& vkDevice = vlkContext.vkDevice;
-    const VkDescriptorPool& vkDescriptorPool = vlkContext.descriptorPool;
+    const VkDescriptorPool& vkDescriptorPool = vlkContext.vkDescriptorPool;
     
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -672,9 +667,6 @@ bool vlkCreateDevice(VlkContext& vlkContext, void* window){
 		std::cout << "Name:         " << instanceExtensions[i].extensionName << std::endl;
 		std::cout << "Spec Version: " << instanceExtensions[i].specVersion << std::endl;
 	}*/
-
-	vlkContext.screenSize.width = Application::Width;
-	vlkContext.screenSize.height = Application::Height;
 
 	VkApplicationInfo appInfo = {};
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;

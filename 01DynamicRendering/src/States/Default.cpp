@@ -60,6 +60,11 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 	m_trackball.setTrackballScale(0.5f);
 	//m_trackball.setCenterOfRotation(Vector3f(0.0f, 0.0f, -50.0f));
 	//m_trackball.setDollyPosition(Vector3f(0.0f, 0.0f, -50.0f));
+
+	 //Allocate Ubo
+	vlkAllocateDescriptorSet(vlkContext.vkDescriptorSetUbo, vlkContext.vkDescriptorSetLayouts[0]);
+	vlkCreateUniformBuffer(vkBufferUniform, vkDeviceMemoryUniform, uniformMappingMVP, 3 * 16 * sizeof(float));
+	vlkBindBufferToDescriptorSet(vkBufferUniform, vlkContext.vkDescriptorSetUbo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0u);
 }
 
 Default::~Default() {
@@ -133,7 +138,7 @@ void Default::update() {
 	m_ubo.view = m_camera.getViewMatrix();
 	m_ubo.model = m_modelMtx;
 
-	memcpy(vlkContext.uniformMappingMVP, &m_ubo, sizeof(m_ubo));
+	memcpy(uniformMappingMVP, &m_ubo, sizeof(m_ubo));
 }
 
 void Default::render() {

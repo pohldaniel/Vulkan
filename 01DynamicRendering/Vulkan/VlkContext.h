@@ -11,46 +11,37 @@ class VlkTexture;
 
 struct VlkContext {
 
+    const int maxDescriptorSets = 10;
+    const int maxDescriptorCount = 65536;
 
     void createShaders(const VkDevice& vkDevice);
     void createDescriptorSetLayout(const VkDevice& vkDevice, std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts);
 
-    VkExtent2D screenSize;
     VkInstance vkInstance;
     VkDevice vkDevice;
-    VkPhysicalDevice vkPhysicalDevice; 
+    VkPhysicalDevice vkPhysicalDevice;
     VkDebugUtilsMessengerEXT vkDebugMessenger;
 
     VkSurfaceKHR vkSurfaceKHR;
-    uint32_t queueFamilyIndex;
-
-    const int maxDescriptorSets = 10;
-    const int maxDescriptorCount = 65536;
-    const int pushConstantRangeSize = 128;
-
-    VkDescriptorPool descriptorPool;
-
-    std::vector<VkDescriptorSetLayout> vkDescriptorSetLayouts;
-
-
-    VkPipelineLayout vkPipelineLayout;
-    VkSampler sampler;
-    std::vector<VkShaderEXT> shader;
     VkQueue vkQueue;
     VkCommandPool vkCommandPool;
     VkCommandBuffer vkCommandBuffer;
     VkFormat vkDepthFormat;
+    VkDescriptorPool vkDescriptorPool;
+    uint32_t queueFamilyIndex;
 
     VlkSwapchain* swapchain;
     VlkSwapchain* newSwapchain;
 
-    VkDescriptorSet vkDescriptorSetUbo;
     VkPolygonMode vkPolygonMode = VkPolygonMode::VK_POLYGON_MODE_FILL;
     VkPresentModeKHR vkPresentModeKHR = VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
 
-    VkBuffer vkBufferUniform;
-    VkDeviceMemory vkDeviceMemoryUniform;
-    void* uniformMappingMVP;
+    std::vector<VkDescriptorSetLayout> vkDescriptorSetLayouts;
+    VkDescriptorSet vkDescriptorSetUbo;
+    VkPipelineLayout vkPipelineLayout;
+    VkSampler sampler;
+    std::vector<VkShaderEXT> shader;
+
     bool drawUi;
 };
 
@@ -96,7 +87,7 @@ extern "C" {
 
     void vlkReadFile(const char* filename, std::vector<char>& data);
     void vlkCompileSahder(const char* path, shaderc_shader_kind kind, std::vector<uint32_t>& shaderCode);
-    std::vector<VkShaderEXT>& vlkCreateShader(const std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts, const VkPushConstantRange& vkPushConstantRange, const std::vector<uint32_t>& vertexCode, const std::vector<uint32_t>& fragmentCode, std::vector<VkShaderEXT>& shader);
+    std::vector<VkShaderEXT>& vlkCreateShader(const std::vector<VkDescriptorSetLayout>& vkDescriptorSetLayouts, const std::vector<uint32_t>& vertexCode, const std::vector<uint32_t>& fragmentCode, std::vector<VkShaderEXT>& shader);
 
     void vlkCreateSampler(VkSampler& vkSampler);
     void vlkCreateAllocator(VmaAllocator& vmaAllocator);

@@ -59,4 +59,8 @@ private:
 	Model model = Model::DRAGON;
 	TrackBall m_trackball;
 	glm::mat4 m_modelMtx;
+
+	VkBuffer vkBufferUniform;
+	VkDeviceMemory vkDeviceMemoryUniform;
+	void* uniformMappingMVP;
 };
