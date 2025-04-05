@@ -65,6 +65,8 @@ Default::Default(StateMachine& machine) : State(machine, States::DEFAULT) {
 	vlkAllocateDescriptorSet(vlkContext.vkDescriptorSetUbo, vlkContext.vkDescriptorSetLayouts[0]);
 	vlkCreateUniformBuffer(vkBufferUniform, vkDeviceMemoryUniform, uniformMappingMVP, 3 * 16 * sizeof(float));
 	vlkBindBufferToDescriptorSet(vkBufferUniform, vlkContext.vkDescriptorSetUbo, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0u);
+
+	vlkContext.swapchain->setOnDraw(std::bind(&Default::OnDraw, this, std::placeholders::_1));
 }
 
 Default::~Default() {
@@ -142,10 +144,16 @@ void Default::update() {
 }
 
 void Default::render() {
-
 	if (m_drawUi)
 		renderUi();
-	vlkDraw(model == Model::DRAGON ? m_dragon : m_vikingRoom);
+	vlkDraw();	
+}
+
+void Default::OnDraw(const VkCommandBuffer& vkCommandbuffer) {
+	const std::list<VlkMesh>& _model = model == Model::DRAGON ? m_dragon : m_vikingRoom;
+	for (std::list<VlkMesh>::const_iterator mesh = _model.begin(); mesh != _model.end(); ++mesh) {
+		(*mesh).draw(vkCommandbuffer);
+	}
 }
 
 void Default::OnMouseMotion(Event::MouseMoveEvent& event) {

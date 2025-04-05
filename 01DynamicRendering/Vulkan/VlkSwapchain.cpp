@@ -3,7 +3,7 @@
 #include "VlkContext.h"
 #include "VlkTexture.h"
 
-VlkSwapchain::VlkSwapchain(unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VkSwapchainKHR vkOldSwapchainKHR)
+VlkSwapchain::VlkSwapchain(unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VlkSwapchain* vlkOldSwapchain)
     : width(width)
     , height(height)
     , currentFrame(0)
@@ -14,7 +14,7 @@ VlkSwapchain::VlkSwapchain(unsigned width, unsigned height, const VkPresentModeK
     const VkDevice& vkDevice = vlkContext.vkDevice;
     const VkFormat vkDepthFormat = vlkContext.vkDepthFormat;
 
-    vlkCreateSwapChain(swapchain, format, width, height, vkPresentModeKHR, vkOldSwapchainKHR);
+    vlkCreateSwapChain(swapchain, format, width, height, vkPresentModeKHR, vlkOldSwapchain ? vlkOldSwapchain->swapchain : VK_NULL_HANDLE);
     vkGetSwapchainImagesKHR(vkDevice, swapchain, &imageCount, VK_NULL_HANDLE);
     images.resize(imageCount);
     vkGetSwapchainImagesKHR(vkDevice, swapchain, &imageCount, images.data());
@@ -25,6 +25,8 @@ VlkSwapchain::VlkSwapchain(unsigned width, unsigned height, const VkPresentModeK
     for (uint32_t i = 0; i < imageCount; i++) {
         vlkCreateImage(depthImages[i], depthImagesMemory[i], width, height, vkDepthFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
         elements.push_back(new VlkSwapchainElement(this, images[i], depthImages[i]));
+        if(vlkOldSwapchain)
+          elements.back()->OnDraw = vlkOldSwapchain->elements[i]->OnDraw;
     }
 }
 
@@ -41,7 +43,7 @@ VlkSwapchain::~VlkSwapchain() {
     vkDestroySwapchainKHR(vkDevice, swapchain, VK_NULL_HANDLE);
 }
 
-bool VlkSwapchain::draw(const std::list<VlkMesh>& meshes) {
+bool VlkSwapchain::draw() {
     const VkDevice& vkDevice = vlkContext.vkDevice;
     const VkQueue& vkQueue = vlkContext.vkQueue;
 
@@ -60,26 +62,22 @@ bool VlkSwapchain::draw(const std::list<VlkMesh>& meshes) {
         &imageIndex
     );
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
-    {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR){
         return true;
-    }
-    else if (result < 0)
-    {
+    } else if (result < 0){
         std::cerr << "Failure running 'vkAcquireNextImageKHR': " << result << std::endl;
     }
 
     VlkSwapchainElement* element = elements.at(imageIndex);
 
-    if (element->lastFence)
-    {
+    if (element->lastFence){
         vkWaitForFences(vkDevice, 1, &element->lastFence, true, std::numeric_limits<uint64_t>::max());
     }
     element->lastFence = currentElement->fence;
 
     vkResetFences(vkDevice, 1, &currentElement->fence);
 
-    element->draw(meshes);
+    element->draw();
 
     VkPipelineStageFlags waitStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
@@ -115,4 +113,10 @@ bool VlkSwapchain::draw(const std::list<VlkMesh>& meshes) {
     currentFrame = (currentFrame + 1) % elements.size();
 
     return false;
+}
+
+void VlkSwapchain::setOnDraw(std::function<void(const VkCommandBuffer& commandBuffer)> fun) {
+    for (VlkSwapchainElement* element : elements) {
+        element->setOnDraw(fun);
+    }
 }

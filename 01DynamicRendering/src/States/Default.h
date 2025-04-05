@@ -29,6 +29,8 @@ public:
 	void fixedUpdate() override;
 	void update() override;
 	void render() override;
+	void OnDraw(const VkCommandBuffer& vkCommandbuffer);
+
 	void resize(int deltaW, int deltaH) override;
 	void OnMouseMotion(Event::MouseMoveEvent& event) override;
 	void OnMouseWheel(Event::MouseWheelEvent& event) override;

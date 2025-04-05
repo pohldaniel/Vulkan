@@ -69,9 +69,11 @@ VlkSwapchainElement::~VlkSwapchainElement(){
     vkDestroyImageView(vkDevice, depthImageView, nullptr);
 }
 
-void VlkSwapchainElement::draw(const std::list<VlkMesh>& meshes){
+void VlkSwapchainElement::draw(){
     const VkPolygonMode vkPolygonMode = vlkContext.vkPolygonMode;
     const VkPipelineLayout vkPipelineLayout = vlkContext.vkPipelineLayout;
+    const VkDescriptorSet vkDescriptorSet = vlkContext.vkDescriptorSetUbo;
+
     const bool drawUi = vlkContext.drawUi;
     
     vlkBeginCommandBuffer(commandBuffer);
@@ -101,12 +103,9 @@ void VlkSwapchainElement::draw(const std::list<VlkMesh>& meshes){
     vkCmdSetDepthBiasEnable(commandBuffer, false);
     vkCmdSetLineWidth(commandBuffer, 2.0f);
 
-   
-    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipelineLayout, 0, 1, &vlkContext.vkDescriptorSetUbo, 0, NULL);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, vkPipelineLayout, 0, 1, &vkDescriptorSet, 0, NULL);
 
-    for (std::list<VlkMesh>::const_iterator mesh = meshes.begin(); mesh != meshes.end(); ++mesh) {
-        (*mesh).draw(commandBuffer);
-    }
+    OnDraw(commandBuffer);
     
     if(drawUi)
       ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
@@ -125,4 +124,8 @@ void VlkSwapchainElement::draw(const std::list<VlkMesh>& meshes){
                              VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
     vlkEndCommandBuffer(commandBuffer);
+}
+
+void VlkSwapchainElement::setOnDraw(std::function<void(const VkCommandBuffer& commandBuffer)> fun) {
+    OnDraw = fun;
 }

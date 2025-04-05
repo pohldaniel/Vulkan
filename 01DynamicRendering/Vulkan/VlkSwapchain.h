@@ -12,7 +12,7 @@ class VlkSwapchain{
 
 public:
 
-    VlkSwapchain(unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VkSwapchainKHR vkOldSwapchainKHR = NULL);
+    VlkSwapchain(unsigned width, unsigned height, const VkPresentModeKHR vkPresentModeKHR, VlkSwapchain* vlkOldSwapchain = NULL);
     VlkSwapchain(const VlkSwapchain& rhs) = delete;
     VlkSwapchain(VlkSwapchain&& rhs) = delete;
     ~VlkSwapchain();
@@ -20,7 +20,8 @@ public:
     VlkSwapchain& operator=(const VlkSwapchain& rhs) = delete;
     VlkSwapchain& operator=(VlkSwapchain&& rhs) = delete;
 
-    bool draw(const std::list<VlkMesh>& meshes);
+    bool draw();
+    void setOnDraw(std::function<void(const VkCommandBuffer& commandBuffer)> fun);
 
     VkSwapchainKHR swapchain;
     VkFormat format;

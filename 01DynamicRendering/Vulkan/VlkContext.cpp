@@ -18,92 +18,49 @@ int maxDescriptorCount = 65536;
 
 #define ArraySize(arr) sizeof((arr)) / sizeof((arr[0]))
 
-#define VK_CHECK(result)                                      \
-    if (result != VK_SUCCESS)                                 \
-    {                                                         \
-        std::cout << "Vulkan Error: " << result << std::endl; \
-        __debugbreak();                                       \
-        return false;                                         \
-    }
-
-static VKAPI_ATTR VkBool32 VKAPI_CALL vk_debug_callback(
-	VkDebugUtilsMessageSeverityFlagBitsEXT msgSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT msgFlags,
-	const VkDebugUtilsMessengerCallbackDataEXT * pCallbackData,
-	void* pUserData)
-{
-	std::cout << pCallbackData->pMessage << std::endl;
-	return false;
+#define VK_CHECK(result)                                  \
+if (result != VK_SUCCESS) {                               \
+    std::cout << "Vulkan Error: " << result << std::endl; \
+    __debugbreak();                                       \
+    return false;                                         \
 }
 
-static int MAX_FRAMES_IN_FLIGHT = 1;
+static VKAPI_ATTR VkBool32 VKAPI_CALL vlkDebugCallback(
+    VkDebugUtilsMessageSeverityFlagBitsEXT msgSeverity,
+    VkDebugUtilsMessageTypeFlagsEXT msgFlags,
+    const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+    void* pUserData) {
+    std::cout << pCallbackData->pMessage << std::endl;
+    return false;
+}
 
 bool isTypeOf(VkPhysicalDevice& device, VkPhysicalDeviceType physicalDeviceType) {
-	VkPhysicalDeviceProperties properties;
-	vkGetPhysicalDeviceProperties(device, &properties);
-	return properties.deviceType == physicalDeviceType;
-}
-
-char* platform_read_file2(const char* path, uint32_t* length) {
-    char* result = 0;
-
-    // This opens the file
-    HANDLE file = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
-
-    if (file != INVALID_HANDLE_VALUE) {
-        LARGE_INTEGER size;
-        if (GetFileSizeEx(file, &size)) {
-            *length = size.QuadPart;
-            //TODO: Suballocte from main allocation
-            result = new char[*length];
-
-            DWORD bytesRead;
-            if (ReadFile(file, result, *length, &bytesRead, 0) && bytesRead == *length) {
-                // TODO: What to do here?
-                // Success
-            }
-            else {
-                //TODO: Assert and error checking
-                std::cout << "Failed to read file" << std::endl;
-            }
-        }
-        else {
-            //TODO: Assert and error checking
-            std::cout << "Failed to get file size" << std::endl;
-        }
-    }
-    else {
-        // TODO: Asserts, get error code
-        std::cout << "Failed to open the file" << std::endl;
-    }
-
-    return result;
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(device, &properties);
+    return properties.deviceType == physicalDeviceType;
 }
 
 void vlkInit(void* window) {
     vlkCreateDevice(vlkContext, window);
-
-    //vkGetDeviceQueue(vlkContext.vkDevice, vlkContext.queueFamilyIndex, 0, &vlkContext.vkQueue);
     vlkGetDeviceQueue(vlkContext.queueFamilyIndex, vlkContext.vkQueue);
     vlkCreateCommandPool(vlkContext.vkCommandPool);
     vlkCreateCommandBuffer(vlkContext.vkCommandBuffer);
     vlkCreateDescriptorPool(vlkContext.vkDescriptorPool);
-
     vlkContext.swapchain = new VlkSwapchain(Application::Width, Application::Height, vlkContext.vkPresentModeKHR);
+    vlkContext.drawUi = true;
 
+    //Sample Scope
     vlkContext.createDescriptorSetLayout(vlkContext.vkDevice, vlkContext.vkDescriptorSetLayouts);
     vlkContext.createShaders(vlkContext.vkDevice);
 
     vlkCreatePipelineLayout(vlkContext.vkDescriptorSetLayouts, { }, vlkContext.vkPipelineLayout);
     vlkCreateSampler(vlkContext.sampler);
-
-    vlkContext.drawUi = true;
 }
 
 void vlkResize() {
     vlkWaitIdle();
 
-    vlkContext.newSwapchain = new VlkSwapchain(Application::Width, Application::Height, vlkContext.vkPresentModeKHR, vlkContext.swapchain->swapchain);
+    vlkContext.newSwapchain = new VlkSwapchain(Application::Width, Application::Height, vlkContext.vkPresentModeKHR, vlkContext.swapchain);
     delete vlkContext.swapchain;
     vlkContext.swapchain = vlkContext.newSwapchain;
 }
@@ -116,7 +73,7 @@ void vlkToggleVerticalSync() {
 
     vlkWaitIdle();
 
-    vlkContext.newSwapchain = new VlkSwapchain(Application::Width, Application::Height, vlkContext.vkPresentModeKHR, vlkContext.swapchain->swapchain);
+    vlkContext.newSwapchain = new VlkSwapchain(Application::Width, Application::Height, vlkContext.vkPresentModeKHR, vlkContext.swapchain);
     delete vlkContext.swapchain;
     vlkContext.swapchain = vlkContext.newSwapchain;
 }
@@ -148,8 +105,8 @@ void vlkSetDrawUI(bool flag) {
     vlkContext.drawUi = flag;
 }
 
-void vlkDraw(const std::list<VlkMesh>& meshes) {
-    vlkContext.swapchain->draw(meshes);
+void vlkDraw() {
+    vlkContext.swapchain->draw();
 }
 
 void vlkGetDeviceQueue(uint32_t queueFamilyIndex, VkQueue& vkQueue) {
@@ -699,7 +656,7 @@ bool vlkCreateDevice(VlkContext& vlkContext, void* window){
 	debugInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	debugInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
 	debugInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
-	debugInfo.pfnUserCallback = vk_debug_callback;
+	debugInfo.pfnUserCallback = vlkDebugCallback;
 
 	vkCreateDebugUtilsMessengerEXT(vlkContext.vkInstance, &debugInfo, 0, &vlkContext.vkDebugMessenger);
 
