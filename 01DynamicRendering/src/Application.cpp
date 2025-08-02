@@ -218,6 +218,9 @@ void Application::initImGUI() {
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
+	io.DisplaySize.x = static_cast<float>(WIDTH);
+	io.DisplaySize.x = static_cast<float>(HEIGHT);
+
 	ImGui::GetStyle().FontScaleMain = 1.0f;
 
 	VkDescriptorPoolSize pool_size[11] ={
