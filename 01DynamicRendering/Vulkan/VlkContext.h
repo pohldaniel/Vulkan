@@ -44,7 +44,7 @@ struct VlkContext {
     VkSampler sampler;
     std::vector<VkShaderEXT> shader;
 
-   
+    static void CheckVKResult(VkResult err);
 };
 
 extern VlkContext vlkContext;

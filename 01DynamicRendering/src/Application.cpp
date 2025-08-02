@@ -222,6 +222,7 @@ void Application::initImGUI() {
 	io.DisplaySize.x = static_cast<float>(HEIGHT);
 
 	ImGui::GetStyle().FontScaleMain = 1.0f;
+	ImGui::StyleColorsDark();
 
 	VkDescriptorPoolSize pool_size[11] ={
 		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
@@ -239,29 +240,38 @@ void Application::initImGUI() {
 	VkDescriptorPoolCreateInfo pool_info = {};
 	pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
 	pool_info.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
-	pool_info.maxSets = 1000 * 11;
-	pool_info.poolSizeCount = 11;
+	pool_info.maxSets = 1000u * 11u;
+	pool_info.poolSizeCount = 11u;
 	pool_info.pPoolSizes = pool_size;
 	vkCreateDescriptorPool(vlkContext.vkDevice, &pool_info, VK_NULL_HANDLE, &imguiPool);
 
 	VkPipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo = {};
 	pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
-	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
+	pipelineRenderingCreateInfo.pNext = NULL;
+	pipelineRenderingCreateInfo.viewMask = 0u;
+	pipelineRenderingCreateInfo.colorAttachmentCount = 1u;
 	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vlkContext.swapchain->format;
 	pipelineRenderingCreateInfo.depthAttachmentFormat = vlkContext.vkDepthFormat;
 	pipelineRenderingCreateInfo.stencilAttachmentFormat = vlkContext.vkDepthFormat;
 
 	ImGui_ImplVulkan_InitInfo init_info = {};
+	init_info.ApiVersion = VK_API_VERSION_1_4;
 	init_info.Instance = vlkContext.vkInstance;
 	init_info.PhysicalDevice = vlkContext.vkPhysicalDevice;
 	init_info.Device = vlkContext.vkDevice;
 	init_info.Queue = vlkContext.vkQueue;
+	init_info.QueueFamily = vlkContext.queueFamilyIndex;
 	init_info.DescriptorPool = imguiPool;
-	init_info.MinImageCount = 3;
-	init_info.ImageCount = 3;
+	init_info.MinImageCount = 3u;
+	init_info.ImageCount = 3u;
 	init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
-	init_info.UseDynamicRendering = true;
+	init_info.UseDynamicRendering = VK_TRUE;
 	init_info.PipelineRenderingCreateInfo = pipelineRenderingCreateInfo;
+	init_info.RenderPass = NULL;
+	init_info.PipelineCache = NULL;
+	init_info.Subpass = 0u;
+	init_info.Allocator = NULL;
+	init_info.CheckVkResultFn = vlkContext.CheckVKResult;
 
 	ImGui_ImplVulkan_Init(&init_info);
 }

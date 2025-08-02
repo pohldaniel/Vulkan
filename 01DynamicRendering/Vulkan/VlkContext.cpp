@@ -34,6 +34,17 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL vlkDebugCallback(
     return false;
 }
 
+void VlkContext::CheckVKResult(VkResult err) {
+    if (err == 0)
+        return;
+
+    std::cout << "[vulkan] Error: VkResult = " << err << std::endl;
+
+    if (err < 0) {
+        abort();
+    }
+}
+
 bool isTypeOf(VkPhysicalDevice& device, VkPhysicalDeviceType physicalDeviceType) {
     VkPhysicalDeviceProperties properties;
     vkGetPhysicalDeviceProperties(device, &properties);
