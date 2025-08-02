@@ -216,6 +216,9 @@ void Application::initImGUI() {
 	ImGuiIO& io = ImGui::GetIO();
 	io.IniFilename = NULL;
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableSetMousePos;
+	ImGui::GetStyle().FontScaleMain = 1.0f;
 
 	VkDescriptorPoolSize pool_size[11] ={
 		{ VK_DESCRIPTOR_TYPE_SAMPLER, 1000 },
@@ -238,7 +241,7 @@ void Application::initImGUI() {
 	pool_info.pPoolSizes = pool_size;
 	vkCreateDescriptorPool(vlkContext.vkDevice, &pool_info, VK_NULL_HANDLE, &imguiPool);
 
-	VkPipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo ={};
+	VkPipelineRenderingCreateInfoKHR pipelineRenderingCreateInfo = {};
 	pipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR;
 	pipelineRenderingCreateInfo.colorAttachmentCount = 1;
 	pipelineRenderingCreateInfo.pColorAttachmentFormats = &vlkContext.swapchain->format;
@@ -258,9 +261,6 @@ void Application::initImGUI() {
 	init_info.PipelineRenderingCreateInfo = pipelineRenderingCreateInfo;
 
 	ImGui_ImplVulkan_Init(&init_info);
-	ImGui_ImplVulkan_CreateFontsTexture();
-
-	
 }
 
 const HWND& Application::GetWindow() {
